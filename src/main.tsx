@@ -27,6 +27,8 @@ createRoot(document.getElementById('root')!).render(
       }}
     >
       <App />
+      <Analytics />
+      <SpeedInsights/>
     </ConfigProvider>
   </StrictMode>,
 );
