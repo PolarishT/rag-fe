@@ -5,8 +5,8 @@ import { ConfigProvider } from 'antd';
 import App from './App';
 import 'antd/dist/reset.css';
 import './index.css';
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -27,6 +27,8 @@ createRoot(document.getElementById('root')!).render(
       }}
     >
       <App />
+      <Analytics />
+      <SpeedInsights />
     </ConfigProvider>
   </StrictMode>,
 );
