@@ -28,7 +28,6 @@ export interface RagProgressEvent {
 
 const DEFAULT_USER_ID = 'codex-bruno-test';
 const DEFAULT_TOP_K = 3;
-const PRODUCTION_API_BASE_URL = 'https://api.unamedserver.me';
 
 const getApiBaseUrl = () => {
   const configuredBaseUrl = import.meta.env.VITE_RAG_API_BASE_URL?.trim();
@@ -37,7 +36,7 @@ const getApiBaseUrl = () => {
     return configuredBaseUrl.replace(/\/$/, '');
   }
 
-  return import.meta.env.PROD ? PRODUCTION_API_BASE_URL : '';
+  return '';
 };
 
 const getUserId = () => import.meta.env.VITE_RAG_USER_ID?.trim() || DEFAULT_USER_ID;
