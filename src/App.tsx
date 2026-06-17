@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { AgentTypingStatus } from './components/AgentTypingStatus';
+import { useXConversations, type ConversationData } from '@ant-design/x-sdk';
 import { AgentThoughtProcess } from './components/AgentThoughtProcess';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessage } from './components/ChatMessage';
@@ -26,7 +25,7 @@ const initialState: ChatState = {
 
 const TYPEWRITER_INTERVAL_MS = 18;
 const TYPEWRITER_CHARS_PER_TICK = 2;
-const DEFAULT_CONVERSATION_ID = 'conversation-current';
+const DEFAULT_CONVERSATION_KEY = 'conversation-current';
 const DEFAULT_CONVERSATION_TITLE = '[当前对话] 什么是 Ant Design X?';
 const MESSAGE_FOOTER_GAP_PX = 24;
 
@@ -41,9 +40,9 @@ const normalizeConversationTitle = (title: string) => title.replace(/^\[当前�
 
 type ConversationGroupTitle = '今天' | '昨天';
 
-interface ConversationItem {
-  id: string;
-  title: string;
+interface ConversationItem extends ConversationData {
+  key: string;
+  label: string;
   groupTitle: ConversationGroupTitle;
   messages: Message[];
 }
@@ -57,20 +56,20 @@ const createSampleMessages = (title: string): Message[] => [
 
 const createInitialConversations = (): ConversationItem[] => [
   {
-    id: DEFAULT_CONVERSATION_ID,
-    title: DEFAULT_CONVERSATION_TITLE,
+    key: DEFAULT_CONVERSATION_KEY,
+    label: DEFAULT_CONVERSATION_TITLE,
     groupTitle: '今天',
     messages: [],
   },
   {
-    id: 'conversation-install',
-    title: '如何快速安装和导入组件?',
+    key: 'conversation-install',
+    label: '如何快速安装和导入组件?',
     groupTitle: '今天',
     messages: createSampleMessages('如何快速安装和导入组件?'),
   },
   {
-    id: 'conversation-agi-interface',
-    title: '新的 AGI 混合界面',
+    key: 'conversation-agi-interface',
+    label: '新的 AGI 混合界面',
     groupTitle: '昨天',
     messages: createSampleMessages('新的 AGI 混合界面'),
   },
@@ -87,7 +86,7 @@ const createConversationTitleFromMessage = (content: string) => {
 };
 
 const createNewConversationTitle = (conversations: ConversationItem[]) => {
-  const newConversationCount = conversations.filter((conversation) => /^新对话(?: \d+)?$/.test(conversation.title)).length;
+  const newConversationCount = conversations.filter((conversation) => /^新对话(?: \d+)?$/.test(conversation.label)).length;
   return newConversationCount === 0 ? '新对话' : `新对话 ${newConversationCount + 1}`;
 };
 
@@ -97,15 +96,14 @@ const groupConversations = (conversations: ConversationItem[]) =>
       title: groupTitle,
       items: conversations
         .filter((conversation) => conversation.groupTitle === groupTitle)
-        .map(({ id, title }) => ({ id, title })),
+        .map(({ key, label }) => ({ id: key, title: label })),
     }))
     .filter((group) => group.items.length > 0);
 
 const App = () => {
   const [chatState, setChatState] = useState<ChatState>(initialState);
   const [inputValue, setInputValue] = useState('');
-  const [conversations, setConversations] = useState<ConversationItem[]>(createInitialConversations);
-  const [activeConversationId, setActiveConversationId] = useState(DEFAULT_CONVERSATION_ID);
+  const initialConversationsRef = useRef<ConversationItem[] | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [ragNotices, setRagNotices] = useState<RagNotice[]>([]);
   const [ragProgressEvents, setRagProgressEvents] = useState<RagProgressEvent[]>([]);
@@ -119,6 +117,25 @@ const App = () => {
   const typewriterTimerRef = useRef<number | null>(null);
   const typewriterMessageIdRef = useRef<string | null>(null);
   const typewriterIdleResolversRef = useRef<Array<() => void>>([]);
+
+  if (initialConversationsRef.current === null) {
+    initialConversationsRef.current = createInitialConversations();
+  }
+
+  const {
+    activeConversationKey,
+    addConversation,
+    conversations,
+    getConversation,
+    removeConversation,
+    setActiveConversationKey,
+    setConversation,
+  } = useXConversations({
+    defaultActiveConversationKey: DEFAULT_CONVERSATION_KEY,
+    defaultConversations: initialConversationsRef.current,
+  });
+  const conversationItems = conversations as ConversationItem[];
+  const currentConversationKey = activeConversationKey || DEFAULT_CONVERSATION_KEY;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -163,6 +180,35 @@ const App = () => {
     resolvers.forEach((resolve) => resolve());
   };
 
+  const getManagedConversation = (conversationKey: string) => getConversation(conversationKey) as ConversationItem | undefined;
+
+  const updateConversation = (
+    conversationKey: string,
+    updater: (conversation: ConversationItem) => ConversationItem,
+  ) => {
+    const conversation = getManagedConversation(conversationKey);
+
+    if (!conversation) {
+      return false;
+    }
+
+    return setConversation(conversationKey, updater(conversation));
+  };
+
+  const cancelActiveGeneration = () => {
+    generationIdRef.current += 1;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    stopTypewriter();
+  };
+
+  const resetTransientChatState = () => {
+    setInputValue('');
+    setRagNotices([]);
+    setRagProgressEvents([]);
+    setHasAnswerStarted(false);
+  };
+
   const appendAssistantContent = (conversationId: string, messageId: string, content: string) => {
     setChatState((previousState) => ({
       ...previousState,
@@ -175,21 +221,76 @@ const App = () => {
           : message,
       ),
     }));
-    setConversations((previousConversations) =>
-      previousConversations.map((conversation) =>
-        conversation.id === conversationId
+    updateConversation(conversationId, (conversation) => ({
+      ...conversation,
+      messages: conversation.messages.map((message) =>
+        message.id === messageId
           ? {
-              ...conversation,
-              messages: conversation.messages.map((message) =>
-                message.id === messageId
-                  ? {
-                      ...message,
-                      content: `${message.content}${content}`,
-                    }
-                  : message,
-              ),
+              ...message,
+              content: `${message.content}${content}`,
             }
-          : conversation,
+          : message,
+      ),
+    }));
+  };
+
+  const createBlankConversation = (conversationKey: string, label: string): ConversationItem => ({
+    key: conversationKey,
+    label,
+    groupTitle: '今天',
+    messages: [],
+  });
+
+  const activateConversation = (conversation: ConversationItem) => {
+    setActiveConversationKey(conversation.key);
+    setChatState({
+      messages: conversation.messages,
+      isGenerating: false,
+    });
+  };
+
+  const resetToConversation = (conversation: ConversationItem) => {
+    cancelActiveGeneration();
+    resetTransientChatState();
+    activateConversation(conversation);
+  };
+
+  const createFallbackConversation = (fallbackLabel = '新对话') => {
+    const fallbackConversation = createBlankConversation(crypto.randomUUID(), fallbackLabel);
+    addConversation(fallbackConversation, 'prepend');
+    resetToConversation(fallbackConversation);
+    return fallbackConversation;
+  };
+
+  const ensureActiveConversation = () => {
+    const activeConversation = getManagedConversation(currentConversationKey);
+
+    if (activeConversation) {
+      return activeConversation;
+    }
+
+    return createFallbackConversation(createNewConversationTitle(conversationItems));
+  };
+
+  const setConversationMessages = (
+    conversationKey: string,
+    updater: (messages: Message[], conversation: ConversationItem) => Message[],
+  ) => {
+    updateConversation(conversationKey, (conversation) => ({
+      ...conversation,
+      messages: updater(conversation.messages, conversation),
+    }));
+  };
+
+  const updateAssistantMessage = (conversationKey: string, assistantMessageId: string, content: string) => {
+    setConversationMessages(conversationKey, (messages) =>
+      messages.map((message) =>
+        message.id === assistantMessageId
+          ? {
+              ...message,
+              content: message.content || content,
+            }
+          : message,
       ),
     );
   };
@@ -261,39 +362,29 @@ const App = () => {
       return;
     }
 
-    const conversationIdForRequest = activeConversationId;
+    const conversationIdForRequest = ensureActiveConversation().key;
     const currentGenerationId = generationIdRef.current + 1;
     generationIdRef.current = currentGenerationId;
     abortControllerRef.current?.abort();
     stopTypewriter();
-    setActiveConversationId(conversationIdForRequest);
+    setActiveConversationKey(conversationIdForRequest);
 
     const userMessage = createMessage('user', content);
     const assistantMessage = createMessage('assistant', '');
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    setInputValue('');
-    setRagNotices([]);
-    setRagProgressEvents([]);
-    setHasAnswerStarted(false);
+    resetTransientChatState();
     setChatState((previousState) => ({
       messages: [...previousState.messages, userMessage, assistantMessage],
       isGenerating: true,
     }));
-    setConversations((previousConversations) =>
-      previousConversations.map((conversation) =>
-        conversation.id === conversationIdForRequest
-          ? {
-              ...conversation,
-              title:
-                conversation.messages.length === 0 ? createConversationTitleFromMessage(content) : conversation.title,
-              groupTitle: '今天',
-              messages: [...conversation.messages, userMessage, assistantMessage],
-            }
-          : conversation,
-      ),
-    );
+    updateConversation(conversationIdForRequest, (conversation) => ({
+      ...conversation,
+      label: conversation.messages.length === 0 ? createConversationTitleFromMessage(content) : conversation.label,
+      groupTitle: '今天',
+      messages: [...conversation.messages, userMessage, assistantMessage],
+    }));
 
     try {
       const finalAnswer = await askRag({
@@ -332,22 +423,10 @@ const App = () => {
         ),
         isGenerating: false,
       }));
-      setConversations((previousConversations) =>
-        previousConversations.map((conversation) =>
-          conversation.id === conversationIdForRequest
-            ? {
-                ...conversation,
-                messages: conversation.messages.map((message) =>
-                  message.id === assistantMessage.id
-                    ? {
-                        ...message,
-                        content: message.content || finalAnswer || '后端没有返回可展示的回答内容。',
-                      }
-                    : message,
-                ),
-              }
-            : conversation,
-        ),
+      updateAssistantMessage(
+        conversationIdForRequest,
+        assistantMessage.id,
+        finalAnswer || '后端没有返回可展示的回答内容。',
       );
     } catch (error) {
       if (generationIdRef.current !== currentGenerationId) {
@@ -360,6 +439,7 @@ const App = () => {
           : error instanceof Error
             ? error.message
             : '未知错误';
+      const fallbackMessage = `抱歉，刚才请求 RAG 服务时出现了问题。${errorMessage ? `\n\n错误信息：${errorMessage}` : ''}`;
 
       setHasAnswerStarted(true);
       setChatState((previousState) => ({
@@ -367,33 +447,13 @@ const App = () => {
           message.id === assistantMessage.id
             ? {
                 ...message,
-                content:
-                  message.content ||
-                  `抱歉，刚才请求 RAG 服务时出现了问题。${errorMessage ? `\n\n错误信息：${errorMessage}` : ''}`,
+                content: message.content || fallbackMessage,
               }
             : message,
         ),
         isGenerating: false,
       }));
-      setConversations((previousConversations) =>
-        previousConversations.map((conversation) =>
-          conversation.id === conversationIdForRequest
-            ? {
-                ...conversation,
-                messages: conversation.messages.map((message) =>
-                  message.id === assistantMessage.id
-                    ? {
-                        ...message,
-                        content:
-                          message.content ||
-                          `抱歉，刚才请求 RAG 服务时出现了问题。${errorMessage ? `\n\n错误信息：${errorMessage}` : ''}`,
-                      }
-                    : message,
-                ),
-              }
-            : conversation,
-        ),
-      );
+      updateAssistantMessage(conversationIdForRequest, assistantMessage.id, fallbackMessage);
     } finally {
       if (abortControllerRef.current === abortController) {
         abortControllerRef.current = null;
@@ -402,49 +462,42 @@ const App = () => {
   };
 
   const createNewConversation = () => {
-    generationIdRef.current += 1;
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    stopTypewriter();
     const newConversationId = crypto.randomUUID();
-
-    setInputValue('');
-    setRagNotices([]);
-    setRagProgressEvents([]);
-    setHasAnswerStarted(false);
-    setActiveConversationId(newConversationId);
-    setConversations((previousConversations) => [
-      {
-        id: newConversationId,
-        title: createNewConversationTitle(previousConversations),
-        groupTitle: '今天',
-        messages: [],
-      },
-      ...previousConversations,
-    ]);
-    setChatState(initialState);
+    const newConversation = createBlankConversation(newConversationId, createNewConversationTitle(conversationItems));
+    addConversation(newConversation, 'prepend');
+    resetToConversation(newConversation);
   };
 
   const selectConversation = (conversationId: string) => {
-    const selectedConversation = conversations.find((conversation) => conversation.id === conversationId);
+    const selectedConversation = getManagedConversation(conversationId);
 
     if (!selectedConversation) {
       return;
     }
 
-    generationIdRef.current += 1;
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    stopTypewriter();
-    setInputValue('');
-    setRagNotices([]);
-    setRagProgressEvents([]);
-    setHasAnswerStarted(false);
-    setActiveConversationId(conversationId);
-    setChatState({
-      messages: selectedConversation.messages,
-      isGenerating: false,
-    });
+    resetToConversation(selectedConversation);
+  };
+
+  const deleteConversation = (conversationId: string) => {
+    const remainingConversations = conversationItems.filter((conversation) => conversation.key !== conversationId);
+    const isDeletingActiveConversation = conversationId === currentConversationKey;
+
+    if (!removeConversation(conversationId)) {
+      return;
+    }
+
+    if (!isDeletingActiveConversation) {
+      return;
+    }
+
+    const nextConversation =
+      remainingConversations[0] ?? createBlankConversation(crypto.randomUUID(), createNewConversationTitle([]));
+
+    if (remainingConversations.length === 0) {
+      addConversation(nextConversation, 'prepend');
+    }
+
+    resetToConversation(nextConversation);
   };
 
   const hasMessages = chatState.messages.length > 0;
@@ -452,7 +505,7 @@ const App = () => {
     (message) => message.role === 'assistant' && message.content.trim().length > 0,
   );
   const shouldShowThinking = chatState.isGenerating && !hasAnswerStarted;
-  const conversationGroups = groupConversations(conversations);
+  const conversationGroups = groupConversations(conversationItems);
   const sidebarGridClass = isSidebarCollapsed
     ? 'lg:grid-cols-[88px_minmax(0,1fr)]'
     : 'lg:grid-cols-[304px_minmax(0,1fr)]';
@@ -472,9 +525,10 @@ const App = () => {
           className={`grid min-h-0 flex-1 grid-cols-1 transition-[grid-template-columns] duration-300 ease-out ${sidebarGridClass}`}
         >
           <ConversationSidebar
-            activeConversationId={activeConversationId}
+            activeConversationId={currentConversationKey}
             conversationGroups={conversationGroups}
             isCollapsed={isSidebarCollapsed}
+            onDeleteConversation={deleteConversation}
             onNewConversation={createNewConversation}
             onSelectConversation={selectConversation}
             onToggleCollapsed={() => setIsSidebarCollapsed((value) => !value)}
@@ -511,9 +565,6 @@ const App = () => {
               className="absolute inset-x-0 bottom-0 bg-white/96 px-5 pb-5 pt-3 backdrop-blur sm:px-9 xl:px-12"
             >
               <div className="mx-auto max-w-4xl space-y-4">
-                <AnimatePresence initial={false}>
-                  {shouldShowThinking && <AgentTypingStatus />}
-                </AnimatePresence>
                 <QuickActions onSelectPrompt={sendMessage} />
                 <ChatInput
                   value={inputValue}
