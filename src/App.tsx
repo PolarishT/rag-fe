@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useXConversations, type ConversationData } from '@ant-design/x-sdk';
 import { AgentThoughtProcess } from './components/AgentThoughtProcess';
 import { ChatInput } from './components/ChatInput';
 import { ChatMessage } from './components/ChatMessage';
@@ -7,139 +6,24 @@ import { ConversationSidebar } from './components/ConversationSidebar';
 import { EmptyState } from './components/EmptyState';
 import { QuickActions } from './components/QuickActions';
 import { TypingIndicator } from './components/TypingIndicator';
-import { askRag } from './services/ragApi';
-import type { RagNotice, RagProgressEvent } from './services/ragApi';
-import type { ChatState, Message, MessageRole } from './types/chat';
+import { useDocumentImport } from './hooks/useDocumentImport';
+import { useRagChat } from './hooks/useRagChat';
+import { useRagConversations } from './hooks/useRagConversations';
 
-const createMessage = (role: MessageRole, content: string): Message => ({
-  id: crypto.randomUUID(),
-  role,
-  content,
-  createdAt: new Date().toISOString(),
-});
-
-const initialState: ChatState = {
-  messages: [],
-  isGenerating: false,
-};
-
-const TYPEWRITER_INTERVAL_MS = 18;
-const TYPEWRITER_CHARS_PER_TICK = 2;
-const DEFAULT_CONVERSATION_KEY = 'conversation-current';
-const DEFAULT_CONVERSATION_TITLE = '[当前对话] 什么是 Ant Design X?';
 const MESSAGE_FOOTER_GAP_PX = 24;
 
-const sampleConversationReplies: Record<string, string> = {
-  '如何快速安装和导入组件?':
-    '可以先安装依赖，然后按需引入聊天相关组件：\n\n```bash\nnpm install @ant-design/x antd\n```\n\n在真实项目里，建议把 UI 组件、消息状态和 API 服务层拆开，这样后续接入 RAG 或模型流式接口会更轻松。',
-  '新的 AGI 混合界面':
-    '新的 AGI 混合界面通常会把“聊天”和“执行”结合起来：左侧保留上下文和任务入口，右侧承载当前对话、检索结果、操作卡片或生成内容，让用户既能自然提问，也能看到系统正在完成什么。',
-};
-
-const normalizeConversationTitle = (title: string) => title.replace(/^\[当前对话\]\s*/, '');
-
-type ConversationGroupTitle = '今天' | '昨天';
-
-interface ConversationItem extends ConversationData {
-  key: string;
-  label: string;
-  groupTitle: ConversationGroupTitle;
-  messages: Message[];
-}
-
-const conversationGroupOrder: ConversationGroupTitle[] = ['今天', '昨天'];
-
-const createSampleMessages = (title: string): Message[] => [
-  createMessage('user', normalizeConversationTitle(title)),
-  createMessage('assistant', sampleConversationReplies[title] ?? '这是一个示例历史对话，你可以继续在下方输入框里追问。'),
-];
-
-const createInitialConversations = (): ConversationItem[] => [
-  {
-    key: DEFAULT_CONVERSATION_KEY,
-    label: DEFAULT_CONVERSATION_TITLE,
-    groupTitle: '今天',
-    messages: [],
-  },
-  {
-    key: 'conversation-install',
-    label: '如何快速安装和导入组件?',
-    groupTitle: '今天',
-    messages: createSampleMessages('如何快速安装和导入组件?'),
-  },
-  {
-    key: 'conversation-agi-interface',
-    label: '新的 AGI 混合界面',
-    groupTitle: '昨天',
-    messages: createSampleMessages('新的 AGI 混合界面'),
-  },
-];
-
-const createConversationTitleFromMessage = (content: string) => {
-  const compactContent = content.replace(/\s+/g, ' ').trim();
-
-  if (!compactContent) {
-    return '新对话';
-  }
-
-  return compactContent.length > 24 ? `${compactContent.slice(0, 24)}...` : compactContent;
-};
-
-const createNewConversationTitle = (conversations: ConversationItem[]) => {
-  const newConversationCount = conversations.filter((conversation) => /^新对话(?: \d+)?$/.test(conversation.label)).length;
-  return newConversationCount === 0 ? '新对话' : `新对话 ${newConversationCount + 1}`;
-};
-
-const groupConversations = (conversations: ConversationItem[]) =>
-  conversationGroupOrder
-    .map((groupTitle) => ({
-      title: groupTitle,
-      items: conversations
-        .filter((conversation) => conversation.groupTitle === groupTitle)
-        .map(({ key, label }) => ({ id: key, title: label })),
-    }))
-    .filter((group) => group.items.length > 0);
-
 const App = () => {
-  const [chatState, setChatState] = useState<ChatState>(initialState);
-  const [inputValue, setInputValue] = useState('');
-  const initialConversationsRef = useRef<ConversationItem[] | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [ragNotices, setRagNotices] = useState<RagNotice[]>([]);
-  const [ragProgressEvents, setRagProgressEvents] = useState<RagProgressEvent[]>([]);
-  const [hasAnswerStarted, setHasAnswerStarted] = useState(false);
   const [footerHeight, setFooterHeight] = useState(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLElement | null>(null);
-  const generationIdRef = useRef(0);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const typewriterQueueRef = useRef('');
-  const typewriterTimerRef = useRef<number | null>(null);
-  const typewriterMessageIdRef = useRef<string | null>(null);
-  const typewriterIdleResolversRef = useRef<Array<() => void>>([]);
-
-  if (initialConversationsRef.current === null) {
-    initialConversationsRef.current = createInitialConversations();
-  }
-
-  const {
-    activeConversationKey,
-    addConversation,
-    conversations,
-    getConversation,
-    removeConversation,
-    setActiveConversationKey,
-    setConversation,
-  } = useXConversations({
-    defaultActiveConversationKey: DEFAULT_CONVERSATION_KEY,
-    defaultConversations: initialConversationsRef.current,
-  });
-  const conversationItems = conversations as ConversationItem[];
-  const currentConversationKey = activeConversationKey || DEFAULT_CONVERSATION_KEY;
+  const ragConversations = useRagConversations();
+  const ragChat = useRagChat({ conversations: ragConversations });
+  const documentImport = useDocumentImport();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [chatState.messages, chatState.isGenerating]);
+  }, [ragChat.chatState.messages, ragChat.chatState.isGenerating]);
 
   useLayoutEffect(() => {
     const footer = footerRef.current;
@@ -162,350 +46,11 @@ const App = () => {
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (typewriterTimerRef.current !== null) {
-        window.clearInterval(typewriterTimerRef.current);
-      }
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-  const resolveTypewriterIdle = () => {
-    if (typewriterQueueRef.current || typewriterTimerRef.current !== null) {
-      return;
-    }
-
-    const resolvers = typewriterIdleResolversRef.current.splice(0);
-    resolvers.forEach((resolve) => resolve());
-  };
-
-  const getManagedConversation = (conversationKey: string) => getConversation(conversationKey) as ConversationItem | undefined;
-
-  const updateConversation = (
-    conversationKey: string,
-    updater: (conversation: ConversationItem) => ConversationItem,
-  ) => {
-    const conversation = getManagedConversation(conversationKey);
-
-    if (!conversation) {
-      return false;
-    }
-
-    return setConversation(conversationKey, updater(conversation));
-  };
-
-  const cancelActiveGeneration = () => {
-    generationIdRef.current += 1;
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    stopTypewriter();
-  };
-
-  const resetTransientChatState = () => {
-    setInputValue('');
-    setRagNotices([]);
-    setRagProgressEvents([]);
-    setHasAnswerStarted(false);
-  };
-
-  const appendAssistantContent = (conversationId: string, messageId: string, content: string) => {
-    setChatState((previousState) => ({
-      ...previousState,
-      messages: previousState.messages.map((message) =>
-        message.id === messageId
-          ? {
-              ...message,
-              content: `${message.content}${content}`,
-            }
-          : message,
-      ),
-    }));
-    updateConversation(conversationId, (conversation) => ({
-      ...conversation,
-      messages: conversation.messages.map((message) =>
-        message.id === messageId
-          ? {
-              ...message,
-              content: `${message.content}${content}`,
-            }
-          : message,
-      ),
-    }));
-  };
-
-  const createBlankConversation = (conversationKey: string, label: string): ConversationItem => ({
-    key: conversationKey,
-    label,
-    groupTitle: '今天',
-    messages: [],
-  });
-
-  const activateConversation = (conversation: ConversationItem) => {
-    setActiveConversationKey(conversation.key);
-    setChatState({
-      messages: conversation.messages,
-      isGenerating: false,
-    });
-  };
-
-  const resetToConversation = (conversation: ConversationItem) => {
-    cancelActiveGeneration();
-    resetTransientChatState();
-    activateConversation(conversation);
-  };
-
-  const createFallbackConversation = (fallbackLabel = '新对话') => {
-    const fallbackConversation = createBlankConversation(crypto.randomUUID(), fallbackLabel);
-    addConversation(fallbackConversation, 'prepend');
-    resetToConversation(fallbackConversation);
-    return fallbackConversation;
-  };
-
-  const ensureActiveConversation = () => {
-    const activeConversation = getManagedConversation(currentConversationKey);
-
-    if (activeConversation) {
-      return activeConversation;
-    }
-
-    return createFallbackConversation(createNewConversationTitle(conversationItems));
-  };
-
-  const setConversationMessages = (
-    conversationKey: string,
-    updater: (messages: Message[], conversation: ConversationItem) => Message[],
-  ) => {
-    updateConversation(conversationKey, (conversation) => ({
-      ...conversation,
-      messages: updater(conversation.messages, conversation),
-    }));
-  };
-
-  const updateAssistantMessage = (conversationKey: string, assistantMessageId: string, content: string) => {
-    setConversationMessages(conversationKey, (messages) =>
-      messages.map((message) =>
-        message.id === assistantMessageId
-          ? {
-              ...message,
-              content: message.content || content,
-            }
-          : message,
-      ),
-    );
-  };
-
-  const stopTypewriter = () => {
-    if (typewriterTimerRef.current !== null) {
-      window.clearInterval(typewriterTimerRef.current);
-      typewriterTimerRef.current = null;
-    }
-
-    typewriterQueueRef.current = '';
-    typewriterMessageIdRef.current = null;
-    resolveTypewriterIdle();
-  };
-
-  const startTypewriter = (conversationId: string, messageId: string, generationId: number) => {
-    if (typewriterTimerRef.current !== null) {
-      return;
-    }
-
-    const tick = () => {
-      if (generationIdRef.current !== generationId || typewriterMessageIdRef.current !== messageId) {
-        stopTypewriter();
-        return;
-      }
-
-      const nextContent = typewriterQueueRef.current.slice(0, TYPEWRITER_CHARS_PER_TICK);
-      typewriterQueueRef.current = typewriterQueueRef.current.slice(TYPEWRITER_CHARS_PER_TICK);
-
-      if (nextContent) {
-        appendAssistantContent(conversationId, messageId, nextContent);
-      }
-
-      if (!typewriterQueueRef.current && typewriterTimerRef.current !== null) {
-        window.clearInterval(typewriterTimerRef.current);
-        typewriterTimerRef.current = null;
-        resolveTypewriterIdle();
-      }
-    };
-
-    tick();
-    typewriterTimerRef.current = window.setInterval(tick, TYPEWRITER_INTERVAL_MS);
-  };
-
-  const enqueueTypewriterContent = (conversationId: string, messageId: string, generationId: number, content: string) => {
-    if (!content || generationIdRef.current !== generationId) {
-      return;
-    }
-
-    typewriterMessageIdRef.current = messageId;
-    typewriterQueueRef.current += content;
-    startTypewriter(conversationId, messageId, generationId);
-  };
-
-  const waitForTypewriterIdle = () => {
-    if (!typewriterQueueRef.current && typewriterTimerRef.current === null) {
-      return Promise.resolve();
-    }
-
-    return new Promise<void>((resolve) => {
-      typewriterIdleResolversRef.current.push(resolve);
-    });
-  };
-
-  const sendMessage = async (rawMessage: string) => {
-    const content = rawMessage.trim();
-
-    if (!content || chatState.isGenerating) {
-      return;
-    }
-
-    const conversationIdForRequest = ensureActiveConversation().key;
-    const currentGenerationId = generationIdRef.current + 1;
-    generationIdRef.current = currentGenerationId;
-    abortControllerRef.current?.abort();
-    stopTypewriter();
-    setActiveConversationKey(conversationIdForRequest);
-
-    const userMessage = createMessage('user', content);
-    const assistantMessage = createMessage('assistant', '');
-    const abortController = new AbortController();
-    abortControllerRef.current = abortController;
-
-    resetTransientChatState();
-    setChatState((previousState) => ({
-      messages: [...previousState.messages, userMessage, assistantMessage],
-      isGenerating: true,
-    }));
-    updateConversation(conversationIdForRequest, (conversation) => ({
-      ...conversation,
-      label: conversation.messages.length === 0 ? createConversationTitleFromMessage(content) : conversation.label,
-      groupTitle: '今天',
-      messages: [...conversation.messages, userMessage, assistantMessage],
-    }));
-
-    try {
-      const finalAnswer = await askRag({
-        question: content,
-        signal: abortController.signal,
-        onDelta: (delta) => {
-          setHasAnswerStarted(true);
-          enqueueTypewriterContent(conversationIdForRequest, assistantMessage.id, currentGenerationId, delta);
-        },
-        onNotice: (notice) => {
-          setRagNotices((previousNotices) => [...previousNotices, notice].slice(-5));
-        },
-        onProgress: (event) => {
-          setRagProgressEvents((previousEvents) => [...previousEvents, event].slice(-24));
-        },
-      });
-
-      if (generationIdRef.current !== currentGenerationId) {
-        return;
-      }
-
-      await waitForTypewriterIdle();
-
-      if (generationIdRef.current !== currentGenerationId) {
-        return;
-      }
-
-      setChatState((previousState) => ({
-        messages: previousState.messages.map((message) =>
-          message.id === assistantMessage.id
-            ? {
-                ...message,
-                content: message.content || finalAnswer || '后端没有返回可展示的回答内容。',
-              }
-            : message,
-        ),
-        isGenerating: false,
-      }));
-      updateAssistantMessage(
-        conversationIdForRequest,
-        assistantMessage.id,
-        finalAnswer || '后端没有返回可展示的回答内容。',
-      );
-    } catch (error) {
-      if (generationIdRef.current !== currentGenerationId) {
-        return;
-      }
-
-      const errorMessage =
-        error instanceof Error && error.name === 'AbortError'
-          ? ''
-          : error instanceof Error
-            ? error.message
-            : '未知错误';
-      const fallbackMessage = `抱歉，刚才请求 RAG 服务时出现了问题。${errorMessage ? `\n\n错误信息：${errorMessage}` : ''}`;
-
-      setHasAnswerStarted(true);
-      setChatState((previousState) => ({
-        messages: previousState.messages.map((message) =>
-          message.id === assistantMessage.id
-            ? {
-                ...message,
-                content: message.content || fallbackMessage,
-              }
-            : message,
-        ),
-        isGenerating: false,
-      }));
-      updateAssistantMessage(conversationIdForRequest, assistantMessage.id, fallbackMessage);
-    } finally {
-      if (abortControllerRef.current === abortController) {
-        abortControllerRef.current = null;
-      }
-    }
-  };
-
-  const createNewConversation = () => {
-    const newConversationId = crypto.randomUUID();
-    const newConversation = createBlankConversation(newConversationId, createNewConversationTitle(conversationItems));
-    addConversation(newConversation, 'prepend');
-    resetToConversation(newConversation);
-  };
-
-  const selectConversation = (conversationId: string) => {
-    const selectedConversation = getManagedConversation(conversationId);
-
-    if (!selectedConversation) {
-      return;
-    }
-
-    resetToConversation(selectedConversation);
-  };
-
-  const deleteConversation = (conversationId: string) => {
-    const remainingConversations = conversationItems.filter((conversation) => conversation.key !== conversationId);
-    const isDeletingActiveConversation = conversationId === currentConversationKey;
-
-    if (!removeConversation(conversationId)) {
-      return;
-    }
-
-    if (!isDeletingActiveConversation) {
-      return;
-    }
-
-    const nextConversation =
-      remainingConversations[0] ?? createBlankConversation(crypto.randomUUID(), createNewConversationTitle([]));
-
-    if (remainingConversations.length === 0) {
-      addConversation(nextConversation, 'prepend');
-    }
-
-    resetToConversation(nextConversation);
-  };
-
-  const hasMessages = chatState.messages.length > 0;
-  const hasAssistantContent = chatState.messages.some(
+  const hasMessages = ragChat.chatState.messages.length > 0;
+  const hasAssistantContent = ragChat.chatState.messages.some(
     (message) => message.role === 'assistant' && message.content.trim().length > 0,
   );
-  const shouldShowThinking = chatState.isGenerating && !hasAnswerStarted;
-  const conversationGroups = groupConversations(conversationItems);
+  const shouldShowThinking = ragChat.chatState.isGenerating && !ragChat.hasAnswerStarted;
   const sidebarGridClass = isSidebarCollapsed
     ? 'lg:grid-cols-[88px_minmax(0,1fr)]'
     : 'lg:grid-cols-[304px_minmax(0,1fr)]';
@@ -525,38 +70,50 @@ const App = () => {
           className={`grid min-h-0 flex-1 grid-cols-1 transition-[grid-template-columns] duration-300 ease-out ${sidebarGridClass}`}
         >
           <ConversationSidebar
-            activeConversationId={currentConversationKey}
-            conversationGroups={conversationGroups}
+            activeConversationId={ragConversations.activeConversationId}
+            conversationSyncError={ragConversations.conversationSyncError}
+            conversationGroups={ragConversations.conversationGroups}
+            documentImportFeedback={documentImport.documentImportFeedback}
+            hasMoreConversations={ragConversations.hasMoreConversations}
             isCollapsed={isSidebarCollapsed}
-            onDeleteConversation={deleteConversation}
-            onNewConversation={createNewConversation}
-            onSelectConversation={selectConversation}
+            isLoadingConversations={ragConversations.isLoadingConversations}
+            isLoadingMoreConversations={ragConversations.isLoadingMoreConversations}
+            isImportingDocument={documentImport.isImportingDocument}
+            onDeleteConversation={ragConversations.deleteConversation}
+            onImportDocument={documentImport.importDocument}
+            onLoadMoreConversations={ragConversations.loadMoreConversations}
+            onNewConversation={ragConversations.createNewConversation}
+            onSelectConversation={ragConversations.selectConversation}
             onToggleCollapsed={() => setIsSidebarCollapsed((value) => !value)}
           />
 
           <section className="relative flex min-h-0 min-w-0 flex-col bg-white">
             <div className="min-h-0 flex-1 overflow-y-auto">
-              {hasMessages || chatState.isGenerating ? (
+              {hasMessages || ragChat.chatState.isGenerating ? (
                 <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col justify-end gap-5 px-5 py-7 sm:px-9 xl:px-12">
-                  {chatState.messages.map((message, index) =>
+                  {ragChat.chatState.messages.map((message, index) =>
                     message.role === 'assistant' && !message.content ? null : (
                       <ChatMessage
                         key={message.id}
                         isStreaming={
-                          chatState.isGenerating &&
+                          ragChat.chatState.isGenerating &&
                           message.role === 'assistant' &&
-                          index === chatState.messages.length - 1
+                          index === ragChat.chatState.messages.length - 1
                         }
                         message={message}
                       />
                     ),
                   )}
-                  {shouldShowThinking && <AgentThoughtProcess notices={ragNotices} progressEvents={ragProgressEvents} />}
-                  {chatState.isGenerating && !hasAnswerStarted && !hasAssistantContent && <TypingIndicator />}
+                  {shouldShowThinking && (
+                    <AgentThoughtProcess notices={ragChat.ragNotices} progressEvents={ragChat.ragProgressEvents} />
+                  )}
+                  {ragChat.chatState.isGenerating && !ragChat.hasAnswerStarted && !hasAssistantContent && (
+                    <TypingIndicator />
+                  )}
                   <div ref={bottomRef} className="shrink-0" style={{ height: bottomSpacerHeight }} />
                 </div>
               ) : (
-                <EmptyState onSelectPrompt={sendMessage} />
+                <EmptyState onSelectPrompt={ragChat.sendMessage} />
               )}
             </div>
 
@@ -565,12 +122,12 @@ const App = () => {
               className="absolute inset-x-0 bottom-0 bg-white/96 px-5 pb-5 pt-3 backdrop-blur sm:px-9 xl:px-12"
             >
               <div className="mx-auto max-w-4xl space-y-4">
-                <QuickActions onSelectPrompt={sendMessage} />
+                <QuickActions onSelectPrompt={ragChat.sendMessage} />
                 <ChatInput
-                  value={inputValue}
-                  isGenerating={chatState.isGenerating}
-                  onChange={setInputValue}
-                  onSubmit={sendMessage}
+                  value={ragChat.inputValue}
+                  isGenerating={ragChat.chatState.isGenerating}
+                  onChange={ragChat.setInputValue}
+                  onSubmit={ragChat.sendMessage}
                 />
               </div>
             </footer>
