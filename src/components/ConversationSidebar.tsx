@@ -218,8 +218,8 @@ export const ConversationSidebar = ({
                       key={item.id}
                       className={
                         active
-                          ? 'group flex min-h-12 w-full items-center gap-2 rounded-xl bg-white px-2 text-slate-800 shadow-sm'
-                          : 'group flex min-h-11 w-full items-center gap-2 rounded-xl px-2 text-slate-700 transition hover:bg-white hover:shadow-sm'
+                          ? 'group flex min-h-12 w-full items-center gap-2 rounded-xl bg-white px-2 text-slate-800 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-50'
+                          : 'group flex min-h-11 w-full items-center gap-2 rounded-xl px-2 text-slate-700 transition hover:bg-white hover:shadow-sm focus-within:bg-white focus-within:shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-50'
                       }
                     >
                       <button
@@ -227,8 +227,8 @@ export const ConversationSidebar = ({
                         onClick={() => onSelectConversation(item.id)}
                         className={
                           active
-                            ? 'min-w-0 flex-1 truncate px-2 py-3 text-left text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                            : 'min-w-0 flex-1 truncate px-2 py-2.5 text-left text-base font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                            ? 'min-w-0 flex-1 truncate px-2 py-3 text-left text-base font-bold focus:outline-none'
+                            : 'min-w-0 flex-1 truncate px-2 py-2.5 text-left text-base font-bold focus:outline-none'
                         }
                       >
                         {item.title}
@@ -238,7 +238,7 @@ export const ConversationSidebar = ({
                         title={`删除对话：${item.title}`}
                         aria-label={`删除对话：${item.title}`}
                         onClick={() => onDeleteConversation(item.id)}
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 focus:outline-none ${
                           active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'
                         }`}
                       >
