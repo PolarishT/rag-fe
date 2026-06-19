@@ -29,6 +29,11 @@ interface UpdateRagConversationOptions {
   title: string;
 }
 
+interface DeleteRagConversationOptions {
+  conversationId: string;
+  signal?: AbortSignal;
+}
+
 interface SseMessage {
   id?: string;
   event?: string;
@@ -169,6 +174,14 @@ const buildConversationUpdateUrl = (conversationId: string) => {
   const baseUrl = getApiBaseUrl();
   return new URL(
     `${baseUrl}/api/v1/public/rag/conversations/${encodeURIComponent(conversationId)}/update`,
+    window.location.origin,
+  );
+};
+
+const buildConversationUrl = (conversationId: string) => {
+  const baseUrl = getApiBaseUrl();
+  return new URL(
+    `${baseUrl}/api/v1/public/rag/conversations/${encodeURIComponent(conversationId)}`,
     window.location.origin,
   );
 };
@@ -600,6 +613,38 @@ export const updateRagConversation = async ({
 
   if (!response.ok) {
     throwRequestError('会话更新失败', response, responseBody);
+  }
+
+  const dto = readConversationSummaryViewDto(unwrapApiResponse(responseBody), 'RagConversationSummaryView');
+
+  if (dto.conversationId !== conversationId) {
+    throw contractError(
+      'RagConversationSummaryView',
+      `字段 conversationId 与请求不一致，期望 ${conversationId}，实际 ${dto.conversationId}。`,
+    );
+  }
+
+  return mapConversationSummary(dto);
+};
+
+export const deleteRagConversation = async ({
+  conversationId,
+  signal,
+}: DeleteRagConversationOptions): Promise<RagConversationSummary> => {
+  const url = buildConversationUrl(conversationId);
+  url.searchParams.set('userId', getRagUserId());
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+    },
+    signal,
+  });
+  const responseBody = await parseResponseBody(response);
+
+  if (!response.ok) {
+    throwRequestError('会话删除失败', response, responseBody);
   }
 
   const dto = readConversationSummaryViewDto(unwrapApiResponse(responseBody), 'RagConversationSummaryView');

@@ -1,10 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getRagConversationMessages, listRagConversations } from '../services/ragApi';
+import { deleteRagConversation, getRagConversationMessages, listRagConversations } from '../services/ragApi';
 import { CONVERSATION_PAGE_SIZE, DRAFT_CONVERSATION_PREFIX } from '../utils/ragConversations';
 import { useRagConversations } from './useRagConversations';
 
 vi.mock('../services/ragApi', () => ({
+  deleteRagConversation: vi.fn(),
   getRagConversationMessages: vi.fn(),
   listRagConversations: vi.fn(),
 }));
@@ -25,6 +26,7 @@ const olderRemoteConversation = {
 
 describe('useRagConversations', () => {
   beforeEach(() => {
+    vi.mocked(deleteRagConversation).mockReset();
     vi.mocked(getRagConversationMessages).mockReset();
     vi.mocked(listRagConversations).mockReset();
   });
@@ -136,5 +138,59 @@ describe('useRagConversations', () => {
       'Remote conversation',
       'Older remote conversation',
     ]);
+  });
+
+  it('deletes a remote conversation on the server before removing it locally', async () => {
+    vi.mocked(listRagConversations).mockResolvedValueOnce({
+      conversations: [remoteConversation, olderRemoteConversation],
+    });
+    vi.mocked(getRagConversationMessages)
+      .mockResolvedValueOnce({
+        conversationId: 'conversation-1',
+        messages: [],
+      })
+      .mockResolvedValueOnce({
+        conversationId: 'conversation-2',
+        messages: [],
+      });
+    vi.mocked(deleteRagConversation).mockResolvedValueOnce(remoteConversation);
+
+    const { result } = renderHook(() => useRagConversations());
+
+    await waitFor(() => expect(result.current.activeConversationId).toBe('conversation-1'));
+
+    await act(async () => {
+      await result.current.deleteConversation('conversation-1');
+    });
+
+    expect(deleteRagConversation).toHaveBeenCalledWith({
+      conversationId: 'conversation-1',
+    });
+    expect(result.current.activeConversationId).toBe('conversation-2');
+    expect(result.current.conversationGroups.flatMap((group) => group.items.map((item) => item.id))).toEqual([
+      'conversation-2',
+    ]);
+  });
+
+  it('keeps a remote conversation visible when server deletion fails', async () => {
+    vi.mocked(listRagConversations).mockResolvedValueOnce({
+      conversations: [remoteConversation],
+    });
+    vi.mocked(getRagConversationMessages).mockResolvedValueOnce({
+      conversationId: 'conversation-1',
+      messages: [],
+    });
+    vi.mocked(deleteRagConversation).mockRejectedValueOnce(new Error('delete failed'));
+
+    const { result } = renderHook(() => useRagConversations());
+
+    await waitFor(() => expect(result.current.activeConversationId).toBe('conversation-1'));
+
+    await act(async () => {
+      await result.current.deleteConversation('conversation-1');
+    });
+
+    expect(result.current.conversationSyncError).toBe('delete failed');
+    expect(result.current.conversationGroups[0].items[0].id).toBe('conversation-1');
   });
 });

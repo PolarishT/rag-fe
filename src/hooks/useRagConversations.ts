@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useXConversations } from '@ant-design/x-sdk';
-import { getRagConversationMessages, listRagConversations } from '../services/ragApi';
+import { deleteRagConversation, getRagConversationMessages, listRagConversations } from '../services/ragApi';
 import type { Message } from '../types/chat';
 import type { ConversationItem } from '../types/ragConversation';
 import {
@@ -495,19 +495,19 @@ export const useRagConversations = () => {
     [activateConversation, getManagedConversation, loadConversationMessages],
   );
 
-  const deleteConversation = useCallback(
+  const removeLocalConversation = useCallback(
     (conversationId: string) => {
       const remainingConversations = conversationItemsRef.current.filter((conversation) => conversation.key !== conversationId);
       const isDeletingActiveConversation = conversationId === activeConversationKeyRef.current;
 
       if (!removeConversation(conversationId)) {
-        return;
+        return false;
       }
 
       conversationItemsRef.current = remainingConversations;
 
       if (!isDeletingActiveConversation) {
-        return;
+        return true;
       }
 
       const nextConversation = remainingConversations[0] ?? createDraftConversation(createNewConversationTitle([]));
@@ -517,8 +517,29 @@ export const useRagConversations = () => {
       }
 
       activateConversation(nextConversation);
+
+      return true;
     },
     [activateConversation, prependConversation, removeConversation],
+  );
+
+  const deleteConversation = useCallback(
+    async (conversationId: string) => {
+      if (isDraftConversationKey(conversationId)) {
+        removeLocalConversation(conversationId);
+        return;
+      }
+
+      setConversationSyncError('');
+
+      try {
+        await deleteRagConversation({ conversationId });
+        removeLocalConversation(conversationId);
+      } catch (error) {
+        setConversationSyncError(error instanceof Error ? error.message : '会话删除失败');
+      }
+    },
+    [removeLocalConversation],
   );
 
   return {

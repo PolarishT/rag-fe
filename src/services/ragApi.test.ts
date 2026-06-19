@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   RagApiContractError,
   askRag,
+  deleteRagConversation,
   getRagConversationMessages,
   listRagConversations,
   updateRagConversation,
@@ -145,6 +146,31 @@ describe('ragApi DTO validation', () => {
 
     await expect(updateRagConversation({ conversationId: 'conversation-1', title: 'Renamed' })).rejects.toThrow(
       '字段 conversationId 与请求不一致',
+    );
+  });
+
+  it('deletes a conversation with the configured user id', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      jsonResponse({
+        data: {
+          conversationId: 'conversation-1',
+          title: 'Deleted conversation',
+          createdAt: '2026-06-17T00:00:00.000Z',
+          updatedAt: '2026-06-17T00:02:00.000Z',
+        },
+      }),
+    );
+
+    await deleteRagConversation({ conversationId: 'conversation-1' });
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: '/api/v1/public/rag/conversations/conversation-1',
+        search: '?userId=codex-bruno-test',
+      }),
+      expect.objectContaining({
+        method: 'DELETE',
+      }),
     );
   });
 
