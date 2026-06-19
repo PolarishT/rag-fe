@@ -110,7 +110,11 @@ export const ConversationSidebar = ({
       />
 
       <div
-        className={isCollapsed ? 'mb-8 flex w-full flex-col items-center gap-4' : 'mb-9 flex w-full items-center gap-3'}
+        className={
+          isCollapsed
+            ? 'mb-8 flex w-full shrink-0 flex-col items-center gap-4'
+            : 'mb-9 flex w-full shrink-0 items-center gap-3'
+        }
       >
         <div className={isCollapsed ? 'flex justify-center' : 'flex min-w-0 flex-1 items-center gap-4'}>
           <BrandMark size="sm" />
@@ -138,8 +142,8 @@ export const ConversationSidebar = ({
         onClick={onNewConversation}
         className={
           isCollapsed
-            ? 'mb-8 flex h-12 w-12 items-center justify-center rounded-xl border border-blue-200 bg-blue-50/80 text-blue-600 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            : 'mb-9 flex h-14 w-full items-center justify-center gap-3 rounded-xl border border-blue-200 bg-blue-50/80 text-base font-bold text-blue-600 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+            ? 'mb-8 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50/80 text-blue-600 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+            : 'mb-9 flex h-14 w-full shrink-0 items-center justify-center gap-3 rounded-xl border border-blue-200 bg-blue-50/80 text-base font-bold text-blue-600 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
         }
       >
         <Plus className="h-5 w-5" />
@@ -148,7 +152,7 @@ export const ConversationSidebar = ({
 
       {!isCollapsed && (isLoadingConversations || conversationSyncError) && (
         <div
-          className={`mb-5 flex min-h-10 items-start gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${
+          className={`mb-5 flex min-h-10 shrink-0 items-start gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${
             conversationSyncError ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
           }`}
         >
@@ -271,7 +275,7 @@ export const ConversationSidebar = ({
       )}
 
       {isCollapsed ? (
-        <div className="mt-5 border-t border-slate-200 pt-5">
+        <div className="mt-5 shrink-0 border-t border-slate-200 pt-5">
           <button
             type="button"
             title={importTitle}
@@ -284,7 +288,7 @@ export const ConversationSidebar = ({
           </button>
         </div>
       ) : (
-        <div className="mt-6 border-t border-slate-200 pt-5">
+        <div className="mt-6 shrink-0 border-t border-slate-200 pt-5">
           <button
             type="button"
             disabled={isImportingDocument}
