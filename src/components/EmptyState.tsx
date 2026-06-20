@@ -1,17 +1,16 @@
 import { ArrowUpRight, BookOpen, Heart, MessageCircle, Smile, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-interface EmptyStateProps {
-  onSelectPrompt: (prompt: string) => void;
+export interface HotTopicItem {
+  id: string;
+  label: string;
+  prompt: string;
 }
 
-const hotTopics = [
-  'Ant Design X 中有哪些组件?',
-  '新的 AGI 混合界面',
-  'Ant Design X 中有哪些组件?',
-  '快来发现 AI 时代的新设计范式。',
-  '如何快速安装和导入组件?',
-];
+interface EmptyStateProps {
+  hotTopics: HotTopicItem[];
+  onSelectPrompt: (prompt: string) => void;
+}
 
 const guideCards = [
   {
@@ -36,7 +35,7 @@ const guideCards = [
   },
 ];
 
-export const EmptyState = ({ onSelectPrompt }: EmptyStateProps) => {
+export const EmptyState = ({ hotTopics, onSelectPrompt }: EmptyStateProps) => {
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -66,22 +65,23 @@ export const EmptyState = ({ onSelectPrompt }: EmptyStateProps) => {
             <h3 className="text-sm font-semibold text-slate-900">热门话题</h3>
             <span className="text-xs text-slate-400">快速开始</span>
           </div>
-          <div className="space-y-1">
+          <ul className="space-y-1">
             {hotTopics.map((topic, index) => (
-              <button
-                key={`${topic}-${index}`}
-                type="button"
-                onClick={() => onSelectPrompt(topic)}
-                className="group flex w-full items-center gap-3 rounded-xl border border-slate-200/55 bg-white/85 px-3 py-2.5 text-left text-sm font-medium text-slate-600 shadow-[0_3px_12px_rgba(15,23,42,0.025)] transition hover:-translate-y-px hover:border-blue-100 hover:bg-white hover:text-slate-950 hover:shadow-[0_7px_20px_rgba(15,23,42,0.06)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-400 transition group-hover:bg-blue-50 group-hover:text-blue-600">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span className="min-w-0 flex-1 truncate">{topic}</span>
-                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-300 opacity-0 transition group-hover:opacity-100" />
-              </button>
+              <li key={topic.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelectPrompt(topic.prompt)}
+                  className="group flex w-full items-center gap-3 rounded-xl border border-slate-200/55 bg-white/85 px-3 py-2.5 text-left text-sm font-medium text-slate-600 shadow-[0_3px_12px_rgba(15,23,42,0.025)] transition hover:-translate-y-px hover:border-blue-100 hover:bg-white hover:text-slate-950 hover:shadow-[0_7px_20px_rgba(15,23,42,0.06)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-400 transition group-hover:bg-blue-50 group-hover:text-blue-600">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{topic.label}</span>
+                  <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-300 opacity-0 transition group-hover:opacity-100" />
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
         <section>
