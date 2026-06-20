@@ -1,4 +1,5 @@
 import { useRef, type ChangeEvent } from 'react';
+import { Button } from 'antd';
 import {
   AlertCircle,
   CheckCircle2,
@@ -6,10 +7,10 @@ import {
   FileUp,
   Loader2,
   MessageCircle,
+  MessageCirclePlus,
   MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
-  Plus,
   ShieldCheck,
   Trash2,
 } from 'lucide-react';
@@ -119,8 +120,8 @@ export const ConversationSidebar = ({
       <div
         className={
           isCollapsed
-            ? 'mb-8 flex w-full shrink-0 flex-col items-center gap-4'
-            : 'mb-9 flex w-full shrink-0 items-center gap-3'
+            ? 'mb-7 flex w-full shrink-0 flex-col items-center gap-4'
+            : 'mb-7 flex w-full shrink-0 items-center gap-3'
         }
       >
         <div className={isCollapsed ? 'flex justify-center' : 'flex min-w-0 flex-1 items-center gap-4'}>
@@ -142,25 +143,26 @@ export const ConversationSidebar = ({
         </button>
       </div>
 
-      <button
-        type="button"
+      <Button
+        type="default"
+        size="large"
         title={isCollapsed ? '新对话' : undefined}
         aria-label="新对话"
+        icon={<MessageCirclePlus className="h-[18px] w-[18px] text-indigo-400" strokeWidth={1.8} />}
         onClick={onNewConversation}
         className={
           isCollapsed
-            ? 'mb-8 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            : 'mb-9 flex h-12 w-full shrink-0 items-center justify-center gap-3 rounded-xl bg-blue-50 px-4 text-sm font-semibold text-blue-600 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+            ? 'mb-7 h-12 w-12 shrink-0 rounded-xl border-transparent bg-indigo-50/40 p-0 text-slate-600 shadow-none hover:border-transparent hover:bg-indigo-50/80 hover:text-slate-700'
+            : 'mb-8 h-12 w-full shrink-0 rounded-xl border-transparent bg-indigo-50/40 text-sm font-semibold text-slate-600 shadow-none hover:border-transparent hover:bg-indigo-50/80 hover:text-slate-700'
         }
       >
-        <Plus className="h-4 w-4" />
         {!isCollapsed && '新对话'}
-      </button>
+      </Button>
 
       {!isCollapsed && (isLoadingConversations || conversationSyncError) && (
         <div
           title={conversationSyncError || undefined}
-          className="mb-5 flex min-h-8 shrink-0 items-center gap-2 px-1 text-xs font-medium text-slate-400"
+          className="mb-4 flex min-h-7 shrink-0 items-center gap-2 px-2 text-xs font-medium text-slate-400"
         >
           {conversationSyncError ? (
             <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
@@ -174,7 +176,7 @@ export const ConversationSidebar = ({
       )}
 
       {isCollapsed ? (
-        <div className="flex min-h-0 w-full flex-1 flex-col items-center gap-3 overflow-y-auto">
+        <div className="flex min-h-0 w-full flex-1 flex-col items-center gap-2 overflow-y-auto">
           {collapsedHistoryItems.map((item) => {
             const active = item.id === activeConversationId;
 
@@ -187,11 +189,11 @@ export const ConversationSidebar = ({
                 onClick={() => onSelectConversation(item.id)}
                 className={
                   active
-                    ? 'flex h-12 w-12 items-center justify-center rounded-xl bg-white text-blue-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                    : 'flex h-12 w-12 items-center justify-center rounded-xl text-slate-500 transition hover:bg-white hover:text-blue-600 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                    ? 'flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                    : 'flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
                 }
               >
-                <MessageCircle className="h-5 w-5" />
+                <MessageCircle className="h-4 w-4" />
               </button>
             );
           })}
@@ -215,11 +217,11 @@ export const ConversationSidebar = ({
           )}
         </div>
       ) : (
-        <div className="min-h-0 flex-1 space-y-9 overflow-y-auto pr-1">
+        <div className="min-h-0 flex-1 space-y-7 overflow-y-auto pr-1">
           {conversationGroups.map((group) => (
             <section key={group.title}>
-              <h3 className="mb-4 text-lg font-bold text-slate-400">{group.title}</h3>
-              <div className="space-y-3">
+              <h3 className="mb-2 px-3 text-xs font-semibold tracking-wide text-slate-400">{group.title}</h3>
+              <div className="space-y-1">
                 {group.items.map((item) => {
                   const active = item.id === activeConversationId;
 
@@ -228,8 +230,8 @@ export const ConversationSidebar = ({
                       key={item.id}
                       className={
                         active
-                          ? 'group flex min-h-12 w-full items-center gap-2 rounded-xl bg-white px-2 text-slate-800 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-50'
-                          : 'group flex min-h-11 w-full items-center gap-2 rounded-xl px-2 text-slate-700 transition hover:bg-white hover:shadow-sm focus-within:bg-white focus-within:shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-50'
+                          ? 'group flex min-h-10 w-full items-center gap-2 rounded-lg bg-blue-50/80 px-3 text-blue-700 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-50'
+                          : 'group flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-slate-600 transition hover:bg-slate-100/80 hover:text-slate-900 focus-within:bg-slate-100/80 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-slate-50'
                       }
                     >
                       <button
@@ -237,8 +239,8 @@ export const ConversationSidebar = ({
                         onClick={() => onSelectConversation(item.id)}
                         className={
                           active
-                            ? 'min-w-0 flex-1 truncate px-2 py-3 text-left text-base font-bold focus:outline-none'
-                            : 'min-w-0 flex-1 truncate px-2 py-2.5 text-left text-base font-bold focus:outline-none'
+                            ? 'min-w-0 flex-1 truncate py-2.5 text-left text-sm font-semibold focus:outline-none'
+                            : 'min-w-0 flex-1 truncate py-2.5 text-left text-sm font-medium focus:outline-none'
                         }
                       >
                         {item.title}
@@ -248,11 +250,9 @@ export const ConversationSidebar = ({
                         title={`删除对话：${item.title}`}
                         aria-label={`删除对话：${item.title}`}
                         onClick={() => onDeleteConversation(item.id)}
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 focus:outline-none ${
-                          active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'
-                        }`}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:bg-red-50 focus:text-red-600 focus:opacity-100 focus:outline-none group-hover:opacity-100"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   );

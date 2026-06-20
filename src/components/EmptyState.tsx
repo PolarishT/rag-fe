@@ -48,7 +48,7 @@ export const EmptyState = ({ hotTopics, onSelectPrompt }: EmptyStateProps) => {
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 shadow-[0_10px_28px_rgba(37,99,235,0.2)]">
             <Sparkles className="h-5 w-5 text-white" />
           </div>
-          <span className="text-sm font-semibold tracking-wide text-blue-600">AGI DESIGN ASSISTANT</span>
+          <span className="text-sm font-semibold tracking-wide text-blue-600">AGI TECH ASSISTANT</span>
         </div>
 
         <h2 className="text-balance text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl xl:text-[42px]">
@@ -86,7 +86,7 @@ export const EmptyState = ({ hotTopics, onSelectPrompt }: EmptyStateProps) => {
 
         <section>
           <div className="mb-5 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">设计指南</h3>
+            <h3 className="text-sm font-semibold text-slate-900">构建指南</h3>
             <span className="text-xs text-slate-400">RICH 模型</span>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">

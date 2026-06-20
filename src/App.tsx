@@ -15,29 +15,24 @@ const MESSAGE_FOOTER_GAP_PX = 24;
 
 const hotTopics: HotTopicItem[] = [
   {
-    id: 'ant-design-x-components',
-    label: 'Ant Design X 中有哪些组件?',
-    prompt: 'Ant Design X 中有哪些组件?',
+    id: 'unsw-2027-qs-ranking',
+    label: 'UNSW 2027 QS Ranking',
+    prompt: '介绍一下 UNSW 2027 QS Ranking',
   },
   {
-    id: 'agi-hybrid-interface',
-    label: '新的 AGI 混合界面',
-    prompt: '介绍一下新的 AGI 混合界面',
+    id: 'andrew-ng-machine-learning',
+    label: '吴恩达机器学习',
+    prompt: '介绍一下吴恩达机器学习课程',
   },
   {
-    id: 'component-selection',
-    label: '如何选择合适的 AI 交互组件?',
-    prompt: '如何为不同场景选择合适的 AI 交互组件?',
+    id: 'shell-quick-start',
+    label: 'shell 快速入门',
+    prompt: '介绍一下 shell 快速入门',
   },
   {
     id: 'ai-design-paradigm',
     label: '快来发现 AI 时代的新设计范式。',
     prompt: '介绍一下 AI 时代的新设计范式',
-  },
-  {
-    id: 'installation',
-    label: '如何快速安装和导入组件?',
-    prompt: '如何快速安装和导入组件?',
   },
 ];
 
