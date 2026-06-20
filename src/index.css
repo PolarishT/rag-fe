@@ -39,12 +39,12 @@
 
   .chat-sender textarea {
     color: #0f172a !important;
-    font-size: 17px !important;
+    font-size: 16px !important;
     line-height: 1.7 !important;
   }
 
   .chat-sender textarea::placeholder {
-    color: #c4cbd5 !important;
+    color: #a8b1be !important;
   }
 
   .chat-sender-action {
@@ -55,8 +55,8 @@
     justify-content: center !important;
     border: 0 !important;
     border-radius: 999px !important;
-    background: #78a7ff !important;
-    box-shadow: 0 10px 24px rgba(59, 130, 246, 0.28) !important;
+    background: #3b82f6 !important;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.24) !important;
   }
 
   .chat-sender-action[disabled] {

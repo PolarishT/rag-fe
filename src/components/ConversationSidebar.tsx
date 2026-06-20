@@ -149,27 +149,26 @@ export const ConversationSidebar = ({
         onClick={onNewConversation}
         className={
           isCollapsed
-            ? 'mb-8 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-blue-200 bg-blue-50/80 text-blue-600 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            : 'mb-9 flex h-14 w-full shrink-0 items-center justify-center gap-3 rounded-xl border border-blue-200 bg-blue-50/80 text-base font-bold text-blue-600 transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+            ? 'mb-8 flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+            : 'mb-9 flex h-12 w-full shrink-0 items-center justify-center gap-3 rounded-xl bg-blue-50 px-4 text-sm font-semibold text-blue-600 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
         }
       >
-        <Plus className="h-5 w-5" />
+        <Plus className="h-4 w-4" />
         {!isCollapsed && '新对话'}
       </button>
 
       {!isCollapsed && (isLoadingConversations || conversationSyncError) && (
         <div
-          className={`mb-5 flex min-h-10 shrink-0 items-start gap-2 rounded-lg px-3 py-2 text-sm font-semibold ${
-            conversationSyncError ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
-          }`}
+          title={conversationSyncError || undefined}
+          className="mb-5 flex min-h-8 shrink-0 items-center gap-2 px-1 text-xs font-medium text-slate-400"
         >
           {conversationSyncError ? (
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
           ) : (
-            <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-blue-500" />
           )}
-          <span className="min-w-0 leading-5">
-            {conversationSyncError ? `会话同步失败：${conversationSyncError}` : '同步会话中'}
+          <span className="min-w-0 truncate leading-5">
+            {conversationSyncError ? '暂时无法同步历史会话' : '正在同步历史会话'}
           </span>
         </div>
       )}

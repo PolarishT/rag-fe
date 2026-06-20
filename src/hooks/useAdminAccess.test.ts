@@ -4,11 +4,22 @@ import { useAdminAccess } from './useAdminAccess';
 
 describe('useAdminAccess', () => {
   beforeEach(() => {
+    sessionStorage.clear();
     vi.stubGlobal('fetch', vi.fn());
   });
 
-  it('reports authenticated when the protected path is accessible', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 200 }));
+  it('reports guest by default in local development', async () => {
+    const { result } = renderHook(() => useAdminAccess());
+
+    await waitFor(() => {
+      expect(result.current).toBe('guest');
+    });
+
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('reports authenticated after the local admin callback succeeds', async () => {
+    sessionStorage.setItem('agents-chat-local-admin-access', 'authenticated');
 
     const { result } = renderHook(() => useAdminAccess());
 
@@ -16,33 +27,6 @@ describe('useAdminAccess', () => {
       expect(result.current).toBe('authenticated');
     });
 
-    expect(fetch).toHaveBeenCalledWith(
-      '/admin-auth',
-      expect.objectContaining({
-        cache: 'no-store',
-        credentials: 'include',
-        redirect: 'manual',
-      }),
-    );
-  });
-
-  it('reports guest when Cloudflare Access does not allow the request', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 302 }));
-
-    const { result } = renderHook(() => useAdminAccess());
-
-    await waitFor(() => {
-      expect(result.current).toBe('guest');
-    });
-  });
-
-  it('reports guest when the access probe fails', async () => {
-    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'));
-
-    const { result } = renderHook(() => useAdminAccess());
-
-    await waitFor(() => {
-      expect(result.current).toBe('guest');
-    });
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

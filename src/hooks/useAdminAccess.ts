@@ -2,10 +2,22 @@ import { useEffect, useState } from 'react';
 
 export type AdminAccessStatus = 'checking' | 'authenticated' | 'guest';
 
+export const LOCAL_ADMIN_ACCESS_KEY = 'agents-chat-local-admin-access';
+
+export const isLocalAdminPreview = () =>
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.hostname === '::1';
+
 export const useAdminAccess = () => {
   const [status, setStatus] = useState<AdminAccessStatus>('checking');
 
   useEffect(() => {
+    if (isLocalAdminPreview()) {
+      setStatus(sessionStorage.getItem(LOCAL_ADMIN_ACCESS_KEY) === 'authenticated' ? 'authenticated' : 'guest');
+      return;
+    }
+
     const abortController = new AbortController();
 
     const checkAdminAccess = async () => {

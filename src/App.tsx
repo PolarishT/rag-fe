@@ -59,8 +59,8 @@ const App = () => {
   const bottomSpacerHeight = footerHeight + MESSAGE_FOOTER_GAP_PX;
 
   return (
-    <div className="h-dvh overflow-hidden bg-[#f5f8fc] p-2 text-slate-950">
-      <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_20px_64px_rgba(15,23,42,0.08)]">
+    <div className="h-dvh overflow-hidden bg-[#f7f8fa] p-2 text-slate-950">
+      <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[20px] border border-slate-200/80 bg-white shadow-[0_20px_64px_rgba(15,23,42,0.06)]">
         <div className="flex h-12 shrink-0 items-center gap-2.5 border-b border-slate-100 bg-slate-50/80 px-6">
           <span className="h-4 w-4 rounded-full bg-red-500" />
           <span className="h-4 w-4 rounded-full bg-lime-500" />
@@ -90,10 +90,10 @@ const App = () => {
             onToggleCollapsed={() => setIsSidebarCollapsed((value) => !value)}
           />
 
-          <section className="relative flex min-h-0 min-w-0 flex-col bg-white">
+          <section className="relative flex min-h-0 min-w-0 flex-col bg-[#f7f9fc]">
             <div className="min-h-0 flex-1 overflow-y-auto">
               {hasMessages || ragChat.chatState.isGenerating ? (
-                <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col justify-end gap-5 px-5 py-7 sm:px-9 xl:px-12">
+                <div className="mx-auto flex min-h-full w-full max-w-[900px] flex-col justify-end gap-5 px-5 py-7 sm:px-9">
                   {ragChat.chatState.messages.map((message, index) =>
                     message.role === 'assistant' && !message.content ? null : (
                       <ChatMessage
@@ -122,9 +122,9 @@ const App = () => {
 
             <footer
               ref={footerRef}
-              className="absolute inset-x-0 bottom-0 bg-white/96 px-5 pb-5 pt-3 backdrop-blur sm:px-9 xl:px-12"
+              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#f7f9fc] via-[#f7f9fc]/98 to-[#f7f9fc]/0 px-5 pb-5 pt-10 sm:px-9"
             >
-              <div className="mx-auto max-w-4xl space-y-4">
+              <div className="mx-auto max-w-[900px] space-y-2">
                 <QuickActions onSelectPrompt={ragChat.sendMessage} />
                 <ChatInput
                   value={ragChat.inputValue}

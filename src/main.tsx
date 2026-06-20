@@ -3,12 +3,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ConfigProvider } from 'antd';
 import App from './App';
+import { isLocalAdminPreview, LOCAL_ADMIN_ACCESS_KEY } from './hooks/useAdminAccess';
 import 'antd/dist/reset.css';
 import './index.css';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
 if (window.location.pathname === '/admin-auth') {
+  if (isLocalAdminPreview()) {
+    sessionStorage.setItem(LOCAL_ADMIN_ACCESS_KEY, 'authenticated');
+  }
+
   window.location.replace('/');
 } else {
   createRoot(document.getElementById('root')!).render(

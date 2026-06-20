@@ -13,7 +13,7 @@ const actions = [
 
 export const QuickActions = ({ onSelectPrompt }: QuickActionsProps) => {
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap justify-center gap-2">
       {actions.map((action) => {
         const Icon = action.icon;
 
@@ -22,9 +22,9 @@ export const QuickActions = ({ onSelectPrompt }: QuickActionsProps) => {
             key={action.label}
             type="button"
             onClick={() => onSelectPrompt(action.prompt)}
-            className="flex h-12 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-base font-black text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="flex h-10 items-center gap-2 rounded-full border border-white/80 bg-white/90 px-4 text-sm font-medium text-slate-500 shadow-[0_4px_14px_rgba(15,23,42,0.055)] transition hover:border-blue-200 hover:bg-white hover:text-blue-600 hover:shadow-[0_6px_18px_rgba(37,99,235,0.09)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-3.5 w-3.5" />
             {action.label}
           </button>
         );
