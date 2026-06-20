@@ -119,7 +119,7 @@ export const ConversationSidebar = ({
         <div className={isCollapsed ? 'flex justify-center' : 'flex min-w-0 flex-1 items-center gap-4'}>
           <BrandMark size="sm" />
           {!isCollapsed && (
-            <span className="truncate text-xl font-bold tracking-normal text-slate-950">Ant Design X</span>
+            <span className="truncate text-xl font-bold tracking-normal text-slate-950">Agents Chat</span>
           )}
         </div>
 
