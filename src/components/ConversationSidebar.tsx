@@ -10,9 +10,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  ShieldCheck,
   Trash2,
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
+import type { AdminAccessStatus } from '../hooks/useAdminAccess';
 import type { DocumentImportFeedback } from '../types/documentImport';
 
 interface ConversationSummary {
@@ -27,6 +29,7 @@ interface ConversationGroup {
 
 interface ConversationSidebarProps {
   activeConversationId: string;
+  adminAccessStatus: AdminAccessStatus;
   conversationSyncError: string;
   conversationGroups: ConversationGroup[];
   documentImportFeedback: DocumentImportFeedback;
@@ -45,6 +48,7 @@ interface ConversationSidebarProps {
 
 export const ConversationSidebar = ({
   activeConversationId,
+  adminAccessStatus,
   conversationSyncError,
   conversationGroups,
   documentImportFeedback,
@@ -61,6 +65,7 @@ export const ConversationSidebar = ({
   onToggleCollapsed,
 }: ConversationSidebarProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const hasAdminAccess = adminAccessStatus === 'authenticated';
   const collapsedHistoryItems = conversationGroups.flatMap((group) => group.items);
   const toggleLabel = isCollapsed ? '展开侧边栏' : '折叠侧边栏';
   const importTitle = isImportingDocument ? '正在导入 Markdown' : '导入 Markdown';
@@ -101,13 +106,15 @@ export const ConversationSidebar = ({
         isCollapsed ? 'items-center px-4' : 'px-6'
       }`}
     >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".md,.markdown,text/markdown"
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      {hasAdminAccess && (
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".md,.markdown,text/markdown"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+      )}
 
       <div
         className={
@@ -274,36 +281,65 @@ export const ConversationSidebar = ({
         </div>
       )}
 
-      {isCollapsed ? (
+      {adminAccessStatus === 'checking' ? null : isCollapsed ? (
         <div className="mt-5 shrink-0 border-t border-slate-200 pt-5">
-          <button
-            type="button"
-            title={importTitle}
-            aria-label={importTitle}
-            disabled={isImportingDocument}
-            onClick={openFilePicker}
-            className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-slate-300"
-          >
-            {isImportingDocument ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileUp className="h-5 w-5" />}
-          </button>
+          {hasAdminAccess ? (
+            <button
+              type="button"
+              title={importTitle}
+              aria-label={importTitle}
+              disabled={isImportingDocument}
+              onClick={openFilePicker}
+              className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-slate-300"
+            >
+              {isImportingDocument ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileUp className="h-5 w-5" />}
+            </button>
+          ) : (
+            <button
+              type="button"
+              title="Admin Authority"
+              aria-label="Admin Authority"
+              onClick={() => {
+                window.location.href = '/admin-auth';
+              }}
+              className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <ShieldCheck className="h-5 w-5" />
+            </button>
+          )}
         </div>
       ) : (
         <div className="mt-6 shrink-0 border-t border-slate-200 pt-5">
-          <button
-            type="button"
-            disabled={isImportingDocument}
-            onClick={openFilePicker}
-            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-slate-400"
-          >
-            {isImportingDocument ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileUp className="h-5 w-5" />}
-            导入 Markdown
-          </button>
+          {hasAdminAccess ? (
+            <>
+              <button
+                type="button"
+                disabled={isImportingDocument}
+                onClick={openFilePicker}
+                className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                {isImportingDocument ? <Loader2 className="h-5 w-5 animate-spin" /> : <FileUp className="h-5 w-5" />}
+                导入 Markdown
+              </button>
 
-          {documentImportFeedback.status !== 'idle' && documentImportFeedback.message && (
-            <div className={`mt-3 flex min-h-6 items-start gap-2 text-sm font-semibold ${importFeedbackColorClass}`}>
-              {importFeedbackIcon}
-              <span className="min-w-0 leading-6">{documentImportFeedback.message}</span>
-            </div>
+              {documentImportFeedback.status !== 'idle' && documentImportFeedback.message && (
+                <div className={`mt-3 flex min-h-6 items-start gap-2 text-sm font-semibold ${importFeedbackColorClass}`}>
+                  {importFeedbackIcon}
+                  <span className="min-w-0 leading-6">{documentImportFeedback.message}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = '/admin-auth';
+              }}
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <ShieldCheck className="h-5 w-5" />
+              Admin Authority
+            </button>
           )}
         </div>
       )}

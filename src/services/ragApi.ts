@@ -731,6 +731,7 @@ export const importRagDocument = async ({ file, signal }: ImportRagDocumentOptio
   const response = await fetch(buildDocumentCreateUrl(), {
     method: 'POST',
     body: formData,
+    credentials: 'include',
     signal,
   });
   const responseBody = await parseResponseBody(response);

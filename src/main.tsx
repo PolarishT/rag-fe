@@ -8,27 +8,31 @@ import './index.css';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: '#3b82f6',
-          borderRadius: 8,
-          fontFamily:
-            'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-        },
-        components: {
-          Button: {
+if (window.location.pathname === '/admin-auth') {
+  window.location.replace('/');
+} else {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorPrimary: '#3b82f6',
             borderRadius: 8,
-            controlHeight: 40,
+            fontFamily:
+              'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
           },
-        },
-      }}
-    >
-      <App />
-      <Analytics />
-      <SpeedInsights/>
-    </ConfigProvider>
-  </StrictMode>,
-);
+          components: {
+            Button: {
+              borderRadius: 8,
+              controlHeight: 40,
+            },
+          },
+        }}
+      >
+        <App />
+        <Analytics />
+        <SpeedInsights />
+      </ConfigProvider>
+    </StrictMode>,
+  );
+}

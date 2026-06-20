@@ -6,6 +6,7 @@ import { ConversationSidebar } from './components/ConversationSidebar';
 import { EmptyState } from './components/EmptyState';
 import { QuickActions } from './components/QuickActions';
 import { TypingIndicator } from './components/TypingIndicator';
+import { useAdminAccess } from './hooks/useAdminAccess';
 import { useDocumentImport } from './hooks/useDocumentImport';
 import { useRagChat } from './hooks/useRagChat';
 import { useRagConversations } from './hooks/useRagConversations';
@@ -20,6 +21,7 @@ const App = () => {
   const ragConversations = useRagConversations();
   const ragChat = useRagChat({ conversations: ragConversations });
   const documentImport = useDocumentImport();
+  const adminAccessStatus = useAdminAccess();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -71,6 +73,7 @@ const App = () => {
         >
           <ConversationSidebar
             activeConversationId={ragConversations.activeConversationId}
+            adminAccessStatus={adminAccessStatus}
             conversationSyncError={ragConversations.conversationSyncError}
             conversationGroups={ragConversations.conversationGroups}
             documentImportFeedback={documentImport.documentImportFeedback}
