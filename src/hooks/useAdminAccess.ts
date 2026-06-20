@@ -22,7 +22,7 @@ export const useAdminAccess = () => {
 
     const checkAdminAccess = async () => {
       try {
-        const response = await fetch('/admin-auth', {
+        const response = await fetch('/admin/auth', {
           cache: 'no-store',
           credentials: 'include',
           redirect: 'manual',

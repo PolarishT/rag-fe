@@ -299,7 +299,7 @@ export const ConversationSidebar = ({
               title="Admin Authority"
               aria-label="Admin Authority"
               onClick={() => {
-                window.location.href = '/admin-auth';
+                window.location.href = '/admin/auth';
               }}
               className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
@@ -332,7 +332,7 @@ export const ConversationSidebar = ({
             <button
               type="button"
               onClick={() => {
-                window.location.href = '/admin-auth';
+                window.location.href = '/admin/auth';
               }}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >

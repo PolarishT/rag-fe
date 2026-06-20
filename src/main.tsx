@@ -9,7 +9,7 @@ import './index.css';
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 
-if (window.location.pathname === '/admin-auth') {
+if (window.location.pathname === '/admin/auth') {
   if (isLocalAdminPreview()) {
     sessionStorage.setItem(LOCAL_ADMIN_ACCESS_KEY, 'authenticated');
   }
