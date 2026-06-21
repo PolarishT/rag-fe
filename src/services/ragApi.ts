@@ -59,26 +59,26 @@ export interface RagProgressEvent {
   receivedAt: string;
 }
 
-export interface RagConversationSummaryViewDto {
+interface RagConversationSummaryViewDto {
   conversationId: string;
   title: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface RagConversationListViewDto {
+interface RagConversationListViewDto {
   conversations: RagConversationSummaryViewDto[];
   nextCursor?: string;
 }
 
-export interface RagConversationMessageViewDto {
+interface RagConversationMessageViewDto {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   createdAt: string;
 }
 
-export interface RagConversationMessagesViewDto {
+interface RagConversationMessagesViewDto {
   conversationId: string;
   messages: RagConversationMessageViewDto[];
 }

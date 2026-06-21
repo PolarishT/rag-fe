@@ -33,7 +33,7 @@ export const createNewConversationTitle = (conversations: ConversationItem[]) =>
   return newConversationCount === 0 ? DEFAULT_CONVERSATION_TITLE : `新对话 ${newConversationCount + 1}`;
 };
 
-export const createBlankConversation = (conversationKey: string, label: string): ConversationItem => ({
+const createBlankConversation = (conversationKey: string, label: string): ConversationItem => ({
   key: conversationKey,
   label,
   groupTitle: '今天',
@@ -82,7 +82,7 @@ export const mergeServerConversationsWithLocalDrafts = ({
   return [...localDraftConversations, ...mergedRemoteConversations];
 };
 
-export const getConversationGroupTitle = (timestamp?: string): ConversationGroupTitle => {
+const getConversationGroupTitle = (timestamp?: string): ConversationGroupTitle => {
   if (!timestamp) {
     return '今天';
   }

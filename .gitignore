@@ -1,6 +1,8 @@
 node_modules/
 dist/
+.vite/
 .wrangler/
+visit-web-worker-cloudflare/
 .DS_Store
 *.swp
 *.local

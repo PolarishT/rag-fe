@@ -10,7 +10,7 @@ export interface ConversationItem extends ConversationData {
   messages: Message[];
 }
 
-export interface ConversationSummaryItem {
+interface ConversationSummaryItem {
   id: string;
   title: string;
 }

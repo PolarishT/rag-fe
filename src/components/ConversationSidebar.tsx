@@ -280,7 +280,7 @@ export const ConversationSidebar = ({
         </div>
       )}
 
-      {adminAccessStatus === 'checking' ? null : isCollapsed ? (
+      {isCollapsed ? (
         <div className="mt-5 shrink-0 border-t border-slate-200 pt-5">
           {hasAdminAccess ? (
             <button

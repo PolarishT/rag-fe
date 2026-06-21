@@ -1,4 +1,4 @@
-export type DocumentImportStatus = 'idle' | 'loading' | 'success' | 'error';
+type DocumentImportStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export interface DocumentImportFeedback {
   status: DocumentImportStatus;

@@ -16,10 +16,6 @@ export default defineConfig({
             return 'antd';
           }
 
-          if (id.includes('react-markdown')) {
-            return 'markdown';
-          }
-
           if (id.includes('framer-motion')) {
             return 'motion';
           }
