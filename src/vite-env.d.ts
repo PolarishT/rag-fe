@@ -2,7 +2,6 @@
 
 interface ImportMetaEnv {
   readonly VITE_RAG_API_BASE_URL?: string;
-  readonly VITE_RAG_USER_ID?: string;
   readonly VITE_RAG_TOP_K?: string;
 }
 

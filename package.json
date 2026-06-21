@@ -4,10 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run",
-    "preview": "vite preview --host 0.0.0.0"
+    "test": "vitest run"
   },
   "dependencies": {
     "@ant-design/x": "^2.8.0",

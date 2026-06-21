@@ -9,6 +9,7 @@ import { createConversationTitleFromMessage, isDraftConversationKey } from '../u
 
 interface UseRagChatOptions {
   conversations: RagConversationController;
+  userId: string;
 }
 
 const readConversationIdFromProgressData = (value: unknown): string | undefined => {
@@ -22,7 +23,7 @@ const readConversationIdFromProgressData = (value: unknown): string | undefined 
   return typeof conversationId === 'string' && conversationId ? conversationId : undefined;
 };
 
-export const useRagChat = ({ conversations }: UseRagChatOptions) => {
+export const useRagChat = ({ conversations, userId }: UseRagChatOptions) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [ragNotices, setRagNotices] = useState<RagNotice[]>([]);
@@ -136,6 +137,7 @@ export const useRagChat = ({ conversations }: UseRagChatOptions) => {
         void updateRagConversation({
           conversationId: conversationIdForRequest,
           title: nextConversationTitle,
+          userId,
         }).catch((error) => {
           conversations.setConversationSyncError(error instanceof Error ? error.message : '会话标题同步失败');
         });
@@ -146,6 +148,7 @@ export const useRagChat = ({ conversations }: UseRagChatOptions) => {
           conversationId: isDraftConversation ? undefined : conversationIdForRequest,
           question: content,
           signal: abortController.signal,
+          userId,
           onDelta: (delta) => {
             if (generationIdRef.current !== currentGenerationId) {
               return;
@@ -217,7 +220,15 @@ export const useRagChat = ({ conversations }: UseRagChatOptions) => {
         }
       }
     },
-    [conversations, enqueueTypewriterContent, resetTransientChatState, stopTypewriter, updateAssistantMessage, waitForTypewriterIdle],
+    [
+      conversations,
+      enqueueTypewriterContent,
+      resetTransientChatState,
+      stopTypewriter,
+      updateAssistantMessage,
+      userId,
+      waitForTypewriterIdle,
+    ],
   );
 
   const chatState = useMemo<ChatState>(

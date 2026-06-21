@@ -4,6 +4,8 @@ import { deleteRagConversation, getRagConversationMessages, listRagConversations
 import { CONVERSATION_PAGE_SIZE, DRAFT_CONVERSATION_PREFIX } from '../utils/ragConversations';
 import { useRagConversations } from './useRagConversations';
 
+const USER_ID = 'user@example.com';
+
 vi.mock('../services/ragApi', () => ({
   deleteRagConversation: vi.fn(),
   getRagConversationMessages: vi.fn(),
@@ -47,7 +49,7 @@ describe('useRagConversations', () => {
       ],
     });
 
-    const { result } = renderHook(() => useRagConversations());
+    const { result } = renderHook(() => useRagConversations(USER_ID));
 
     await waitFor(() => expect(result.current.activeConversationId).toBe('conversation-1'));
     await waitFor(() => expect(result.current.messages).toHaveLength(1));
@@ -63,12 +65,17 @@ describe('useRagConversations', () => {
       role: 'user',
       content: 'Hello',
     });
+    expect(getRagConversationMessages).toHaveBeenCalledWith({
+      conversationId: 'conversation-1',
+      signal: expect.any(AbortSignal),
+      userId: USER_ID,
+    });
   });
 
   it('falls back to a local draft when initial server sync fails', async () => {
     vi.mocked(listRagConversations).mockRejectedValueOnce(new Error('network down'));
 
-    const { result } = renderHook(() => useRagConversations());
+    const { result } = renderHook(() => useRagConversations(USER_ID));
 
     await waitFor(() => expect(result.current.conversationSyncError).toBe('network down'));
 
@@ -89,7 +96,7 @@ describe('useRagConversations', () => {
       messages: [],
     });
 
-    const { result } = renderHook(() => useRagConversations());
+    const { result } = renderHook(() => useRagConversations(USER_ID));
 
     await waitFor(() => expect(result.current.isLoadingConversations).toBe(false));
 
@@ -121,7 +128,7 @@ describe('useRagConversations', () => {
       messages: [],
     });
 
-    const { result } = renderHook(() => useRagConversations());
+    const { result } = renderHook(() => useRagConversations(USER_ID));
 
     await waitFor(() => expect(result.current.hasMoreConversations).toBe(true));
 
@@ -132,6 +139,7 @@ describe('useRagConversations', () => {
     expect(listRagConversations).toHaveBeenNthCalledWith(2, {
       cursor: 'cursor-2',
       limit: CONVERSATION_PAGE_SIZE,
+      userId: USER_ID,
     });
     expect(result.current.hasMoreConversations).toBe(false);
     expect(result.current.conversationGroups.flatMap((group) => group.items.map((item) => item.title))).toEqual([
@@ -155,7 +163,7 @@ describe('useRagConversations', () => {
       });
     vi.mocked(deleteRagConversation).mockResolvedValueOnce(remoteConversation);
 
-    const { result } = renderHook(() => useRagConversations());
+    const { result } = renderHook(() => useRagConversations(USER_ID));
 
     await waitFor(() => expect(result.current.activeConversationId).toBe('conversation-1'));
 
@@ -165,6 +173,7 @@ describe('useRagConversations', () => {
 
     expect(deleteRagConversation).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
+      userId: USER_ID,
     });
     expect(result.current.activeConversationId).toBe('conversation-2');
     expect(result.current.conversationGroups.flatMap((group) => group.items.map((item) => item.id))).toEqual([
@@ -182,7 +191,7 @@ describe('useRagConversations', () => {
     });
     vi.mocked(deleteRagConversation).mockRejectedValueOnce(new Error('delete failed'));
 
-    const { result } = renderHook(() => useRagConversations());
+    const { result } = renderHook(() => useRagConversations(USER_ID));
 
     await waitFor(() => expect(result.current.activeConversationId).toBe('conversation-1'));
 

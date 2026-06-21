@@ -14,6 +14,7 @@ vi.mock('../services/ragApi', () => ({
 }));
 
 type AskRagOptions = Parameters<typeof askRag>[0];
+const USER_ID = 'user@example.com';
 
 const createHarnessConversation = (): ConversationItem => ({
   key: DEFAULT_CONVERSATION_KEY,
@@ -101,7 +102,7 @@ const useChatHarness = () => {
     [messages],
   );
 
-  const chat = useRagChat({ conversations });
+  const chat = useRagChat({ conversations, userId: USER_ID });
 
   return {
     ...chat,
@@ -147,6 +148,7 @@ describe('useRagChat', () => {
       role: 'assistant',
       content: '',
     });
+    expect(capturedOptions?.userId).toBe(USER_ID);
 
     act(() => {
       capturedOptions?.onProgress?.({

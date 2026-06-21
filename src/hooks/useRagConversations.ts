@@ -71,7 +71,7 @@ const appendServerConversations = ({
   return [...updatedLocalConversations, ...newRemoteConversations];
 };
 
-export const useRagConversations = () => {
+export const useRagConversations = (userId: string) => {
   const initialConversationsRef = useRef<ConversationItem[] | null>(null);
   const conversationItemsRef = useRef<ConversationItem[]>([]);
   const activeConversationKeyRef = useRef(DEFAULT_CONVERSATION_KEY);
@@ -269,6 +269,7 @@ export const useRagConversations = () => {
       const result = await getRagConversationMessages({
         conversationId,
         signal,
+        userId,
       });
       const remoteMessages = createMessagesFromRemote(result.messages);
 
@@ -276,7 +277,7 @@ export const useRagConversations = () => {
 
       return remoteMessages;
     },
-    [replaceConversationMessages],
+    [replaceConversationMessages, userId],
   );
 
   const syncConversationsFromServer = useCallback(
@@ -300,6 +301,7 @@ export const useRagConversations = () => {
         const result = await listRagConversations({
           limit: CONVERSATION_PAGE_SIZE,
           signal,
+          userId,
         });
 
         if (!canApplySyncResult()) {
@@ -394,6 +396,7 @@ export const useRagConversations = () => {
       setConversationItems,
       updateConversationNextCursor,
       updateIsLoadingMoreConversations,
+      userId,
     ],
   );
 
@@ -434,6 +437,7 @@ export const useRagConversations = () => {
       const result = await listRagConversations({
         cursor,
         limit: CONVERSATION_PAGE_SIZE,
+        userId,
       });
 
       if (!canApplyPaginationResult()) {
@@ -464,6 +468,7 @@ export const useRagConversations = () => {
     setConversationItems,
     updateConversationNextCursor,
     updateIsLoadingMoreConversations,
+    userId,
   ]);
 
   const selectConversation = useCallback(
@@ -533,13 +538,13 @@ export const useRagConversations = () => {
       setConversationSyncError('');
 
       try {
-        await deleteRagConversation({ conversationId });
+        await deleteRagConversation({ conversationId, userId });
         removeLocalConversation(conversationId);
       } catch (error) {
         setConversationSyncError(error instanceof Error ? error.message : '会话删除失败');
       }
     },
-    [removeLocalConversation],
+    [removeLocalConversation, userId],
   );
 
   return {

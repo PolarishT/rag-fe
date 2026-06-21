@@ -8,6 +8,8 @@ import {
   updateRagConversation,
 } from './ragApi';
 
+const USER_ID = 'user@example.com';
+
 const jsonResponse = (body: unknown, init?: ResponseInit) =>
   new Response(JSON.stringify(body), {
     headers: {
@@ -38,7 +40,7 @@ describe('ragApi DTO validation', () => {
       }),
     );
 
-    const result = await listRagConversations({ limit: 10 });
+    const result = await listRagConversations({ limit: 10, userId: USER_ID });
 
     expect(result).toEqual({
       conversations: [
@@ -68,7 +70,7 @@ describe('ragApi DTO validation', () => {
       }),
     );
 
-    await expect(listRagConversations()).rejects.toThrow(RagApiContractError);
+    await expect(listRagConversations({ userId: USER_ID })).rejects.toThrow(RagApiContractError);
   });
 
   it('rejects legacy conversation collection aliases instead of guessing shape', async () => {
@@ -80,7 +82,7 @@ describe('ragApi DTO validation', () => {
       }),
     );
 
-    await expect(listRagConversations()).rejects.toThrow('字段 conversations 必须是数组');
+    await expect(listRagConversations({ userId: USER_ID })).rejects.toThrow('字段 conversations 必须是数组');
   });
 
   it('parses a strict RagConversationMessagesView response', async () => {
@@ -104,7 +106,10 @@ describe('ragApi DTO validation', () => {
       }),
     );
 
-    const result = await getRagConversationMessages({ conversationId: 'conversation-1' });
+    const result = await getRagConversationMessages({
+      conversationId: 'conversation-1',
+      userId: USER_ID,
+    });
 
     expect(result.messages).toHaveLength(2);
     expect(result.messages[1]).toMatchObject({
@@ -129,9 +134,12 @@ describe('ragApi DTO validation', () => {
       }),
     );
 
-    await expect(getRagConversationMessages({ conversationId: 'conversation-1' })).rejects.toThrow(
-      '字段 role 只能是 user 或 assistant',
-    );
+    await expect(
+      getRagConversationMessages({
+        conversationId: 'conversation-1',
+        userId: USER_ID,
+      }),
+    ).rejects.toThrow('字段 role 只能是 user 或 assistant');
   });
 
   it('fails update responses whose summary belongs to a different conversation', async () => {
@@ -144,8 +152,24 @@ describe('ragApi DTO validation', () => {
       }),
     );
 
-    await expect(updateRagConversation({ conversationId: 'conversation-1', title: 'Renamed' })).rejects.toThrow(
-      '字段 conversationId 与请求不一致',
+    await expect(
+      updateRagConversation({
+        conversationId: 'conversation-1',
+        title: 'Renamed',
+        userId: USER_ID,
+      }),
+    ).rejects.toThrow('字段 conversationId 与请求不一致');
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: '/api/v1/public/rag/conversations/conversation-1/update',
+      }),
+      expect.objectContaining({
+        body: JSON.stringify({
+          userId: USER_ID,
+          title: 'Renamed',
+        }),
+      }),
     );
   });
 
@@ -161,12 +185,15 @@ describe('ragApi DTO validation', () => {
       }),
     );
 
-    await deleteRagConversation({ conversationId: 'conversation-1' });
+    await deleteRagConversation({
+      conversationId: 'conversation-1',
+      userId: USER_ID,
+    });
 
     expect(fetch).toHaveBeenCalledWith(
       expect.objectContaining({
         pathname: '/api/v1/public/rag/conversations/conversation-1',
-        search: '?userId=codex-bruno-test',
+        search: '?userId=user%40example.com',
       }),
       expect.objectContaining({
         method: 'DELETE',
@@ -187,6 +214,14 @@ describe('ragApi DTO validation', () => {
       ),
     );
 
-    await expect(askRag({ question: 'Hello' })).rejects.toThrow('模型配额不足');
+    await expect(askRag({ question: 'Hello', userId: USER_ID })).rejects.toThrow('模型配额不足');
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pathname: '/api/v1/public/rag/ask',
+        search: expect.stringContaining('userId=user%40example.com'),
+      }),
+      expect.any(Object),
+    );
   });
 });

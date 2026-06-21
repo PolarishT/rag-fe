@@ -2,6 +2,7 @@ interface AskRagOptions {
   conversationId?: string;
   question: string;
   signal?: AbortSignal;
+  userId: string;
   onDelta?: (delta: string) => void;
   onNotice?: (notice: RagNotice) => void;
   onProgress?: (event: RagProgressEvent) => void;
@@ -16,22 +17,26 @@ interface ListRagConversationsOptions {
   cursor?: string;
   limit?: number;
   signal?: AbortSignal;
+  userId: string;
 }
 
 interface GetRagConversationMessagesOptions {
   conversationId: string;
   signal?: AbortSignal;
+  userId: string;
 }
 
 interface UpdateRagConversationOptions {
   conversationId: string;
   signal?: AbortSignal;
   title: string;
+  userId: string;
 }
 
 interface DeleteRagConversationOptions {
   conversationId: string;
   signal?: AbortSignal;
+  userId: string;
 }
 
 interface SseMessage {
@@ -109,20 +114,17 @@ export class RagApiContractError extends Error {
   }
 }
 
-const DEFAULT_USER_ID = 'codex-bruno-test';
 const DEFAULT_TOP_K = 3;
 
 const getApiBaseUrl = () => {
   const configuredBaseUrl = import.meta.env.VITE_RAG_API_BASE_URL?.trim();
 
-  if (configuredBaseUrl) {
-    return configuredBaseUrl.replace(/\/$/, '');
+  if (!configuredBaseUrl) {
+    throw new Error('缺少生产环境配置 VITE_RAG_API_BASE_URL。');
   }
 
-  return '';
+  return configuredBaseUrl.replace(/\/$/, '');
 };
-
-export const getRagUserId = () => import.meta.env.VITE_RAG_USER_ID?.trim() || DEFAULT_USER_ID;
 
 const getTopK = () => {
   const parsedTopK = Number(import.meta.env.VITE_RAG_TOP_K ?? DEFAULT_TOP_K);
@@ -140,8 +142,7 @@ const createRequestId = (userId: string) => {
   return `${userId}-${compactTimestamp}-${crypto.randomUUID().slice(0, 8)}`;
 };
 
-const buildAskUrl = (question: string, conversationId?: string) => {
-  const userId = getRagUserId();
+const buildAskUrl = (userId: string, question: string, conversationId?: string) => {
   const baseUrl = getApiBaseUrl();
   const url = new URL(`${baseUrl}/api/v1/public/rag/ask`, window.location.origin);
 
@@ -527,9 +528,10 @@ export const listRagConversations = async ({
   cursor,
   limit = 50,
   signal,
-}: ListRagConversationsOptions = {}): Promise<RagConversationListResult> => {
+  userId,
+}: ListRagConversationsOptions): Promise<RagConversationListResult> => {
   const url = buildConversationsUrl();
-  url.searchParams.set('userId', getRagUserId());
+  url.searchParams.set('userId', userId);
   url.searchParams.set('limit', String(limit));
 
   if (cursor) {
@@ -560,9 +562,10 @@ export const listRagConversations = async ({
 export const getRagConversationMessages = async ({
   conversationId,
   signal,
+  userId,
 }: GetRagConversationMessagesOptions): Promise<RagConversationMessagesResult> => {
   const url = buildConversationMessagesUrl(conversationId);
-  url.searchParams.set('userId', getRagUserId());
+  url.searchParams.set('userId', userId);
 
   const response = await fetch(url, {
     method: 'GET',
@@ -596,6 +599,7 @@ export const updateRagConversation = async ({
   conversationId,
   signal,
   title,
+  userId,
 }: UpdateRagConversationOptions): Promise<RagConversationSummary> => {
   const response = await fetch(buildConversationUpdateUrl(conversationId), {
     method: 'POST',
@@ -604,7 +608,7 @@ export const updateRagConversation = async ({
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      userId: getRagUserId(),
+      userId,
       title,
     }),
     signal,
@@ -630,9 +634,10 @@ export const updateRagConversation = async ({
 export const deleteRagConversation = async ({
   conversationId,
   signal,
+  userId,
 }: DeleteRagConversationOptions): Promise<RagConversationSummary> => {
   const url = buildConversationUrl(conversationId);
-  url.searchParams.set('userId', getRagUserId());
+  url.searchParams.set('userId', userId);
 
   const response = await fetch(url, {
     method: 'DELETE',
@@ -666,8 +671,9 @@ export const askRag = async ({
   onDelta,
   onNotice,
   onProgress,
+  userId,
 }: AskRagOptions): Promise<string> => {
-  const response = await fetch(buildAskUrl(question, conversationId), {
+  const response = await fetch(buildAskUrl(userId, question, conversationId), {
     method: 'GET',
     headers: {
       Accept: 'text/event-stream',

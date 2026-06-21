@@ -4,22 +4,11 @@ import { useAdminAccess } from './useAdminAccess';
 
 describe('useAdminAccess', () => {
   beforeEach(() => {
-    sessionStorage.clear();
     vi.stubGlobal('fetch', vi.fn());
   });
 
-  it('reports guest by default in local development', async () => {
-    const { result } = renderHook(() => useAdminAccess());
-
-    await waitFor(() => {
-      expect(result.current).toBe('guest');
-    });
-
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it('reports authenticated after the local admin callback succeeds', async () => {
-    sessionStorage.setItem('agents-chat-local-admin-access', 'authenticated');
+  it('reports authenticated when the production admin endpoint succeeds', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 200 }));
 
     const { result } = renderHook(() => useAdminAccess());
 
@@ -27,6 +16,23 @@ describe('useAdminAccess', () => {
       expect(result.current).toBe('authenticated');
     });
 
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith(
+      '/admin/auth',
+      expect.objectContaining({
+        cache: 'no-store',
+        credentials: 'include',
+        redirect: 'manual',
+      }),
+    );
+  });
+
+  it('reports guest when the production admin endpoint rejects access', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 403 }));
+
+    const { result } = renderHook(() => useAdminAccess());
+
+    await waitFor(() => {
+      expect(result.current).toBe('guest');
+    });
   });
 });

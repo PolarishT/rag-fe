@@ -7,6 +7,7 @@ import { EmptyState, type HotTopicItem } from './components/EmptyState';
 import { QuickActions } from './components/QuickActions';
 import { TypingIndicator } from './components/TypingIndicator';
 import { useAdminAccess } from './hooks/useAdminAccess';
+import { useAuthenticatedUser } from './hooks/useAuthenticatedUser';
 import { useDocumentImport } from './hooks/useDocumentImport';
 import { useRagChat } from './hooks/useRagChat';
 import { useRagConversations } from './hooks/useRagConversations';
@@ -36,13 +37,17 @@ const hotTopics: HotTopicItem[] = [
   },
 ];
 
-const App = () => {
+interface AuthenticatedAppProps {
+  userId: string;
+}
+
+const AuthenticatedApp = ({ userId }: AuthenticatedAppProps) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [footerHeight, setFooterHeight] = useState(0);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLElement | null>(null);
-  const ragConversations = useRagConversations();
-  const ragChat = useRagChat({ conversations: ragConversations });
+  const ragConversations = useRagConversations(userId);
+  const ragChat = useRagChat({ conversations: ragConversations, userId });
   const documentImport = useDocumentImport();
   const adminAccessStatus = useAdminAccess();
 
@@ -162,6 +167,46 @@ const App = () => {
       </section>
     </div>
   );
+};
+
+const IdentityStatusScreen = ({
+  error,
+  onRetry,
+}: {
+  error?: string;
+  onRetry?: () => void;
+}) => (
+  <div className="flex h-dvh items-center justify-center bg-[#f7f8fa] px-6 text-slate-950">
+    <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-[0_20px_64px_rgba(15,23,42,0.08)]">
+      <h1 className="text-xl font-semibold">{error ? '邮箱身份验证失败' : '正在验证邮箱身份'}</h1>
+      <p className="mt-3 text-sm leading-6 text-slate-500">
+        {error ?? '正在从 Cloudflare Access 获取已验证邮箱，请稍候。'}
+      </p>
+      {onRetry && (
+        <button
+          type="button"
+          className="mt-6 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700"
+          onClick={onRetry}
+        >
+          重新验证
+        </button>
+      )}
+    </section>
+  </div>
+);
+
+const App = () => {
+  const authenticatedUser = useAuthenticatedUser();
+
+  if (authenticatedUser.status === 'loading') {
+    return <IdentityStatusScreen />;
+  }
+
+  if (authenticatedUser.status === 'error') {
+    return <IdentityStatusScreen error={authenticatedUser.error} onRetry={authenticatedUser.retry} />;
+  }
+
+  return <AuthenticatedApp userId={authenticatedUser.email} />;
 };
 
 export default App;
