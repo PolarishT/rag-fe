@@ -1,38 +1,41 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useAdminAccess } from './useAdminAccess';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  ADMIN_ACCESS_SESSION_KEY,
+  hasAdminAccessSession,
+  storeAdminAccessSession,
+  useAdminAccess,
+} from './useAdminAccess';
 
 describe('useAdminAccess', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn());
+    sessionStorage.clear();
   });
 
-  it('reports authenticated when the production admin endpoint succeeds', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 200 }));
+  it('reports guest before the admin callback succeeds', async () => {
+    const { result } = renderHook(() => useAdminAccess());
+
+    await waitFor(() => {
+      expect(result.current).toBe('guest');
+    });
+  });
+
+  it('reports authenticated after the admin callback stores the session', async () => {
+    storeAdminAccessSession();
 
     const { result } = renderHook(() => useAdminAccess());
 
     await waitFor(() => {
       expect(result.current).toBe('authenticated');
     });
-
-    expect(fetch).toHaveBeenCalledWith(
-      '/admin/auth',
-      expect.objectContaining({
-        cache: 'no-store',
-        credentials: 'include',
-        redirect: 'manual',
-      }),
-    );
   });
 
-  it('reports guest when the production admin endpoint rejects access', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 403 }));
+  it('stores the admin state only in the current browser session', () => {
+    expect(hasAdminAccessSession()).toBe(false);
 
-    const { result } = renderHook(() => useAdminAccess());
+    storeAdminAccessSession();
 
-    await waitFor(() => {
-      expect(result.current).toBe('guest');
-    });
+    expect(sessionStorage.getItem(ADMIN_ACCESS_SESSION_KEY)).toBe('authenticated');
+    expect(hasAdminAccessSession()).toBe(true);
   });
 });
