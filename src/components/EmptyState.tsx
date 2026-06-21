@@ -52,7 +52,7 @@ export const EmptyState = ({ hotTopics, onSelectPrompt }: EmptyStateProps) => {
         </div>
 
         <h2 className="text-balance text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-4xl xl:text-[42px]">
-          你好，我是 Agents Design X
+          你好，我是 Agents Tech X
         </h2>
         <p className="mt-4 max-w-xl text-base font-normal leading-7 text-slate-400 sm:text-lg">
           Polaris 设计的 AGI 产品解决方案。告诉我你想了解或构建什么，我们一起开始。
