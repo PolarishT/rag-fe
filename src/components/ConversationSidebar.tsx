@@ -15,7 +15,10 @@ import {
   Trash2,
 } from 'lucide-react';
 import { BrandMark } from './BrandMark';
-import type { AdminAccessStatus } from '../hooks/useAdminAccess';
+import {
+  beginAdminAuthentication,
+  type AdminAccessStatus,
+} from '../hooks/useAdminAccess';
 import type { DocumentImportFeedback } from '../types/documentImport';
 
 interface ConversationSummary {
@@ -298,9 +301,7 @@ export const ConversationSidebar = ({
               type="button"
               title="Admin Authority"
               aria-label="Admin Authority"
-              onClick={() => {
-                window.location.href = '/admin/auth';
-              }}
+              onClick={() => void beginAdminAuthentication()}
               className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-blue-200 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               <ShieldCheck className="h-5 w-5" />
@@ -331,9 +332,7 @@ export const ConversationSidebar = ({
           ) : (
             <button
               type="button"
-              onClick={() => {
-                window.location.href = '/admin/auth';
-              }}
+              onClick={() => void beginAdminAuthentication()}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
               <ShieldCheck className="h-5 w-5" />

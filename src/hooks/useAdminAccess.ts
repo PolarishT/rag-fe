@@ -1,6 +1,32 @@
 export type AdminAccessStatus = 'authenticated' | 'guest';
 
 export const ADMIN_ACCESS_SESSION_KEY = 'agents-chat-admin-access';
+export const ACCESS_LOGOUT_PATH = '/cdn-cgi/access/logout';
+export const ADMIN_LOGIN_PATH = '/admin/auth';
+export const ACCESS_TEAM_ORIGIN = 'https://unsw-opensource-rag.cloudflareaccess.com';
+
+interface BeginAdminAuthenticationOptions {
+  origin?: string;
+  navigate?: (url: string) => void;
+}
+
+export const buildAdminAuthenticationUrl = (origin = window.location.origin) => {
+  const adminLoginUrl = new URL(ADMIN_LOGIN_PATH, origin);
+  const globalLogoutUrl = new URL(ACCESS_LOGOUT_PATH, ACCESS_TEAM_ORIGIN);
+  globalLogoutUrl.searchParams.set('returnTo', adminLoginUrl.toString());
+
+  const applicationLogoutUrl = new URL(ACCESS_LOGOUT_PATH, origin);
+  applicationLogoutUrl.searchParams.set('returnTo', globalLogoutUrl.toString());
+  return applicationLogoutUrl.toString();
+};
+
+export const beginAdminAuthentication = ({
+  origin = window.location.origin,
+  navigate = (url) => window.location.assign(url),
+}: BeginAdminAuthenticationOptions = {}) => {
+  sessionStorage.removeItem(ADMIN_ACCESS_SESSION_KEY);
+  navigate(buildAdminAuthenticationUrl(origin));
+};
 
 const consumeAdminRedirect = () => {
   const url = new URL(window.location.href);
