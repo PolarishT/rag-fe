@@ -45,20 +45,17 @@ describe('useAdminAccess', () => {
     });
   });
 
-  it('builds an application and global logout redirect chain', () => {
-    const applicationLogoutUrl = new URL(buildAdminAuthenticationUrl('https://web.example.com'));
-    const globalLogoutUrl = new URL(applicationLogoutUrl.searchParams.get('returnTo') ?? '');
+  it('builds a single global logout redirect to admin authentication', () => {
+    const logoutUrl = new URL(buildAdminAuthenticationUrl('https://web.example.com'));
 
-    expect(applicationLogoutUrl.origin).toBe('https://web.example.com');
-    expect(applicationLogoutUrl.pathname).toBe(ACCESS_LOGOUT_PATH);
-    expect(globalLogoutUrl.origin).toBe(ACCESS_TEAM_ORIGIN);
-    expect(globalLogoutUrl.pathname).toBe(ACCESS_LOGOUT_PATH);
-    expect(globalLogoutUrl.searchParams.get('returnTo')).toBe(
+    expect(logoutUrl.origin).toBe(ACCESS_TEAM_ORIGIN);
+    expect(logoutUrl.pathname).toBe(ACCESS_LOGOUT_PATH);
+    expect(logoutUrl.searchParams.get('returnTo')).toBe(
       `https://web.example.com${ADMIN_LOGIN_PATH}`,
     );
   });
 
-  it('clears local admin state and starts the logout redirect chain', () => {
+  it('clears local admin state and starts the global logout redirect', () => {
     sessionStorage.setItem(ADMIN_ACCESS_SESSION_KEY, 'authenticated');
     const navigate = vi.fn();
 

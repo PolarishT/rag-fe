@@ -12,12 +12,9 @@ interface BeginAdminAuthenticationOptions {
 
 export const buildAdminAuthenticationUrl = (origin = window.location.origin) => {
   const adminLoginUrl = new URL(ADMIN_LOGIN_PATH, origin);
-  const globalLogoutUrl = new URL(ACCESS_LOGOUT_PATH, ACCESS_TEAM_ORIGIN);
-  globalLogoutUrl.searchParams.set('returnTo', adminLoginUrl.toString());
-
-  const applicationLogoutUrl = new URL(ACCESS_LOGOUT_PATH, origin);
-  applicationLogoutUrl.searchParams.set('returnTo', globalLogoutUrl.toString());
-  return applicationLogoutUrl.toString();
+  const logoutUrl = new URL(ACCESS_LOGOUT_PATH, ACCESS_TEAM_ORIGIN);
+  logoutUrl.searchParams.set('returnTo', adminLoginUrl.toString());
+  return logoutUrl.toString();
 };
 
 export const beginAdminAuthentication = ({
